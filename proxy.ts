@@ -39,7 +39,10 @@ export async function proxy(req: NextRequest) {
 
   // ─── Tenant App Routing ───────────────────────────────────────
   // If the request comes in on a custom domain (not the platform), serve the tenant app
+  const hostname = host.split(":")[0];
+  const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
   const isPlatformHost =
+    isIp ||
     host === PLATFORM_HOST ||
     host === `www.${PLATFORM_HOST}` ||
     host.includes("localhost") ||
