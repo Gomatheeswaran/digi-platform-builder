@@ -1,11 +1,7 @@
 "use client";
-import { useEffect, useState, use, useCallback } from "react";
-import {
-  Layout, Tabs, Typography, Button, Spin, Alert, message, Tag, Space,
-} from "antd";
-import {
-  ArrowLeftOutlined, SaveOutlined, EyeOutlined, MobileOutlined,
-} from "@ant-design/icons";
+import { useEffect, useState, use } from "react";
+import { Tabs, Typography, Button, Spin, Alert, App, Tag, Space } from "antd";
+import { ArrowLeftOutlined, SaveOutlined, EyeOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import type { AppConfig } from "@/types";
 import ThemeTab from "@/components/builder/ThemeTab";
@@ -15,7 +11,6 @@ import NavigationTab from "@/components/builder/NavigationTab";
 import IntegrationsTab from "@/components/builder/IntegrationsTab";
 import SEOTab from "@/components/builder/SEOTab";
 
-const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
 
 const TEMPLATE_ICONS: Record<string, string> = {
@@ -25,11 +20,20 @@ const TEMPLATE_ICONS: Record<string, string> = {
 
 export default function BuilderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { message } = App.useApp();
   const [app, setApp] = useState<Record<string, unknown> | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -66,7 +70,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
   }
 
   if (loading) return <div className="flex justify-center py-16"><Spin size="large" /></div>;
-  if (!app || !config) return <Alert message="App not found" type="error" />;
+  if (!app || !config) return <Alert type="error" description="App not found" />;
 
   const template = app.template as string;
 
@@ -104,7 +108,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
   ];
 
   return (
-    <Layout className="!bg-transparent">
+    <div>
       {/* Builder Header */}
       <div className="flex items-center gap-3 mb-6">
         <Link href={`/apps/${id}`}><Button icon={<ArrowLeftOutlined />} type="text" /></Link>
@@ -117,7 +121,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
           {dirty && <Tag color="warning">Unsaved changes</Tag>}
         </div>
         <Space>
-          <Link href={`/apps/${id}/settings`}>
+          <Link href={`/preview/${id}`} target="_blank">
             <Button icon={<EyeOutlined />}>Preview</Button>
           </Link>
           <Button
@@ -132,16 +136,17 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
         </Space>
       </div>
 
-      {/* Help banner for first time */}
+      {/* Tip banner */}
       <Alert
         type="info"
         showIcon
         className="mb-6"
-        message="Builder Tip"
         description={
           <Text className="text-sm">
-            Use the tabs below to configure your app. Changes are applied instantly to your live app when saved.
-            To connect a custom domain, go to <Link href={`/apps/${id}/settings`} className="font-medium">Settings</Link>.
+            Use the tabs below to configure your app. Click{" "}
+            <strong>Preview</strong> to see it live.
+            To connect a custom domain, go to{" "}
+            <Link href={`/apps/${id}/settings`} className="font-medium">Settings</Link>.
           </Text>
         }
         closable
@@ -150,12 +155,12 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
       <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
         <Tabs
           items={tabItems}
-          tabPosition="left"
+          tabPosition={isMobile ? "top" : "left"}
           size="small"
           className="builder-tabs"
           tabBarStyle={{ width: 160, paddingTop: 8, paddingBottom: 8, background: "#fafafa", borderRight: "1px solid #f0f0f0" }}
         />
       </div>
-    </Layout>
+    </div>
   );
 }

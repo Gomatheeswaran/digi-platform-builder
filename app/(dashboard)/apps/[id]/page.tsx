@@ -6,7 +6,7 @@ import {
 } from "antd";
 import {
   EditOutlined, GlobalOutlined, SettingOutlined,
-  ArrowLeftOutlined, ExportOutlined, RocketOutlined,
+  ArrowLeftOutlined, ExportOutlined, RocketOutlined, EyeOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import dayjs from "dayjs";
@@ -56,6 +56,9 @@ export default function AppOverviewPage({ params }: { params: Promise<{ id: stri
           <Text className="text-slate-400">/{app.slug as string}</Text>
         </div>
         <Space>
+          <Link href={`/preview/${id}`} target="_blank">
+            <Button icon={<EyeOutlined />}>Preview</Button>
+          </Link>
           <Link href={`/apps/${id}/builder`}>
             <Button type="primary" icon={<EditOutlined />}>Open Builder</Button>
           </Link>
