@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
-import { Card, Form, Input, Button, Typography, Result, Select } from "antd";
+import { Card, Form, Input, Button, Typography, Result, Select, DatePicker, Switch, InputNumber } from "antd";
 import { CheckCircleOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import type { AppConfig, AppTemplate, FieldConfig } from "@/types";
 import AppHeader from "../AppHeader";
 import AppFooter from "../AppFooter";
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 interface Props {
   app: { id: string; name: string; template: AppTemplate; config: AppConfig };
@@ -15,27 +16,47 @@ interface Props {
 }
 
 function renderField(field: FieldConfig) {
-  const commonProps = { placeholder: `Enter ${field.name.toLowerCase()}` };
+  const placeholder = `Enter ${field.name.toLowerCase()}`;
 
   switch (field.type) {
     case "textarea":
-      return <Input.TextArea {...commonProps} rows={4} />;
+      return <Input.TextArea placeholder={placeholder} rows={4} />;
+    case "number":
+      return <Input type="number" placeholder={placeholder} />;
+    case "currency":
+      return <InputNumber className="w-full" placeholder={placeholder} prefix="₹" />;
+    case "date":
+      return <DatePicker className="w-full" />;
+    case "datetime":
+      return <DatePicker className="w-full" showTime />;
+    case "boolean":
+      return <Switch />;
     case "select":
       return (
         <Select
           placeholder={`Select ${field.name}`}
           options={(field.options || []).map((o) => ({ value: o, label: o }))}
           className="w-full"
+          allowClear
+        />
+      );
+    case "multiselect":
+      return (
+        <Select
+          mode="multiple"
+          placeholder={`Select ${field.name}`}
+          options={(field.options || []).map((o) => ({ value: o, label: o }))}
+          className="w-full"
         />
       );
     case "email":
-      return <Input type="email" {...commonProps} />;
+      return <Input type="email" placeholder={placeholder} />;
     case "phone":
-      return <Input type="tel" {...commonProps} />;
-    case "number":
-      return <Input type="number" {...commonProps} />;
+      return <Input type="tel" placeholder={placeholder} />;
+    case "url":
+      return <Input type="url" placeholder={placeholder} />;
     default:
-      return <Input {...commonProps} />;
+      return <Input placeholder={placeholder} />;
   }
 }
 
@@ -58,10 +79,21 @@ export default function FormCollectorRenderer({ app, pathname, config }: Props) 
   async function handleSubmit(values: Record<string, unknown>) {
     setLoading(true);
     try {
+      // Convert dayjs DatePicker values to ISO strings
+      const payload: Record<string, unknown> = {};
+      for (const field of formFields) {
+        const val = values[field.slug];
+        if ((field.type === "date" || field.type === "datetime") && val && dayjs.isDayjs(val)) {
+          payload[field.slug] = val.format(field.type === "datetime" ? "YYYY-MM-DDTHH:mm:ss" : "YYYY-MM-DD");
+        } else {
+          payload[field.slug] = val;
+        }
+      }
+
       await fetch(`/api/apps/${app.id}/data?model=${effectiveSlug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, submittedAt: new Date().toISOString() }),
+        body: JSON.stringify({ ...payload, submittedAt: new Date().toISOString() }),
       });
       setSubmitted(true);
     } finally {
@@ -94,6 +126,7 @@ export default function FormCollectorRenderer({ app, pathname, config }: Props) 
                   key={field.id}
                   name={field.slug}
                   label={field.name}
+                  valuePropName={field.type === "boolean" ? "checked" : "value"}
                   rules={[{ required: field.required, message: `${field.name} is required` }]}
                 >
                   {renderField(field)}
