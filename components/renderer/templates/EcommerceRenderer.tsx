@@ -42,10 +42,12 @@ function formatPrice(amount: number, symbol = "₹") {
 
 function ProductGrid({
   appId,
+  modelSlug,
   currencySymbol,
   onAddToCart,
 }: {
   appId: string;
+  modelSlug: string;
   currencySymbol: string;
   onAddToCart: (product: Product) => void;
 }) {
@@ -56,7 +58,7 @@ function ProductGrid({
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(`/api/apps/${appId}/data?model=products&limit=100`)
+    fetch(`/api/apps/${appId}/data?model=${modelSlug}&limit=100`)
       .then((r) => r.json())
       .then((data) => {
         const list: Product[] = (data.records || []).filter((p: Product) => p.isActive !== false);
@@ -230,6 +232,8 @@ export default function EcommerceRenderer({ app, pathname, config }: Props) {
   const [cartOpen, setCartOpen] = useState(false);
 
   const currencySymbol = (config.settings?.currencySymbol as string) || "₹";
+  const productsModel = config.dataModels.find((m) => m.slug === "products") ?? config.dataModels[0];
+  const productsModelSlug = productsModel?.slug ?? "products";
 
   function addToCart(product: Product) {
     setCartItems((prev) => {
@@ -320,6 +324,7 @@ export default function EcommerceRenderer({ app, pathname, config }: Props) {
             )}
             <ProductGrid
               appId={app.id}
+              modelSlug={productsModelSlug}
               currencySymbol={currencySymbol}
               onAddToCart={addToCart}
             />

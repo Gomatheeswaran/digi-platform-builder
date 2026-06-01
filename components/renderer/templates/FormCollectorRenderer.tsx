@@ -51,13 +51,14 @@ export default function FormCollectorRenderer({ app, pathname, config }: Props) 
   const submitLabel = formComponent?.props.submitLabel as string || "Submit";
   const successMessage = formComponent?.props.successMessage as string || "Thank you! Your response has been recorded.";
 
-  const responseModel = config.dataModels.find((m) => m.slug === modelSlug);
+  const responseModel = config.dataModels.find((m) => m.slug === modelSlug) ?? config.dataModels[0];
+  const effectiveSlug = responseModel?.slug ?? modelSlug;
   const formFields = responseModel?.fields.filter((f) => f.slug !== "submittedAt") || [];
 
   async function handleSubmit(values: Record<string, unknown>) {
     setLoading(true);
     try {
-      await fetch(`/api/apps/${app.id}/data?model=${modelSlug}`, {
+      await fetch(`/api/apps/${app.id}/data?model=${effectiveSlug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...values, submittedAt: new Date().toISOString() }),

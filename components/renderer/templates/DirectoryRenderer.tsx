@@ -75,7 +75,8 @@ export default function DirectoryRenderer({ app, pathname, config }: Props) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("");
 
-  const listingsModel = config.dataModels.find((m) => m.slug === "listings");
+  const listingsModel = config.dataModels.find((m) => m.slug === "listings") ?? config.dataModels[0];
+  const modelSlug = listingsModel?.slug ?? "listings";
   const fields = listingsModel?.fields || [];
 
   // Identify structural fields by slug/type for smart card layout
@@ -91,7 +92,7 @@ export default function DirectoryRenderer({ app, pathname, config }: Props) {
   );
 
   useEffect(() => {
-    fetch(`/api/apps/${app.id}/data?model=listings&limit=200`)
+    fetch(`/api/apps/${app.id}/data?model=${modelSlug}&limit=200`)
       .then((r) => r.json())
       .then((data) => setListings(data.records || []))
       .finally(() => setLoading(false));

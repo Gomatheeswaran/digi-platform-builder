@@ -36,7 +36,8 @@ export default function CalculatorRenderer({ app, pathname, config }: Props) {
   const [form] = Form.useForm();
   const [results, setResults] = useState<Record<string, number>>({});
 
-  const calcModel = config.dataModels.find((m) => m.slug === "calculations");
+  const calcModel = config.dataModels.find((m) => m.slug === "calculations") ?? config.dataModels[0];
+  const modelSlug = calcModel?.slug ?? "calculations";
   const inputFields = calcModel?.fields.filter((f) => f.type !== "formula" && f.type !== "date" && f.slug !== "label") || [];
   const formulaFields = calcModel?.fields.filter((f) => f.type === "formula") || [];
 
@@ -44,7 +45,7 @@ export default function CalculatorRenderer({ app, pathname, config }: Props) {
   const calcDesc = config.pages.find((p) => p.isHome)?.components.find((c) => c.type === "calculator")?.props.description as string || "";
 
   useEffect(() => {
-    fetch(`/api/apps/${app.id}/data?model=calculations&limit=50`)
+    fetch(`/api/apps/${app.id}/data?model=${modelSlug}&limit=50`)
       .then((r) => r.json())
       .then((data) => setHistory(data.records || []))
       .finally(() => setLoading(false));
@@ -74,14 +75,14 @@ export default function CalculatorRenderer({ app, pathname, config }: Props) {
       if (f.formula) formulaResults[f.slug] = evaluateFormula(f.formula, numValues);
     }
 
-    await fetch(`/api/apps/${app.id}/data?model=calculations`, {
+    await fetch(`/api/apps/${app.id}/data?model=${modelSlug}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...values, ...formulaResults, date: dayjs().format("YYYY-MM-DD") }),
     });
 
     message.success("Saved!");
-    const data = await fetch(`/api/apps/${app.id}/data?model=calculations&limit=50`).then((r) => r.json());
+    const data = await fetch(`/api/apps/${app.id}/data?model=${modelSlug}&limit=50`).then((r) => r.json());
     setHistory(data.records || []);
   }
 

@@ -95,7 +95,8 @@ export default function NotepadRenderer({ app, pathname, config }: Props) {
   const [editNote, setEditNote] = useState<NoteRecord | null>(null);
   const [form] = Form.useForm();
 
-  const notesModel = config.dataModels.find((m) => m.slug === "notes");
+  const notesModel = config.dataModels.find((m) => m.slug === "notes") ?? config.dataModels[0];
+  const modelSlug = notesModel?.slug ?? "notes";
   const fields = notesModel?.fields || [];
 
   // Identify structural fields by slug/type for smart card rendering
@@ -112,7 +113,7 @@ export default function NotepadRenderer({ app, pathname, config }: Props) {
   );
 
   async function loadNotes() {
-    const data = await fetch(`/api/apps/${app.id}/data?model=notes&limit=100`).then((r) => r.json());
+    const data = await fetch(`/api/apps/${app.id}/data?model=${modelSlug}&limit=100`).then((r) => r.json());
     setNotes(data.records || []);
   }
 
@@ -133,13 +134,13 @@ export default function NotepadRenderer({ app, pathname, config }: Props) {
     }
 
     if (editNote) {
-      await fetch(`/api/apps/${app.id}/data/${editNote._id as string}?model=notes`, {
+      await fetch(`/api/apps/${app.id}/data/${editNote._id as string}?model=${modelSlug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
     } else {
-      await fetch(`/api/apps/${app.id}/data?model=notes`, {
+      await fetch(`/api/apps/${app.id}/data?model=${modelSlug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -153,7 +154,7 @@ export default function NotepadRenderer({ app, pathname, config }: Props) {
   }
 
   async function deleteNote(note: NoteRecord) {
-    await fetch(`/api/apps/${app.id}/data/${note._id as string}?model=notes`, { method: "DELETE" });
+    await fetch(`/api/apps/${app.id}/data/${note._id as string}?model=${modelSlug}`, { method: "DELETE" });
     await loadNotes();
   }
 
