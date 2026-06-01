@@ -1,9 +1,18 @@
 "use client";
+import React from "react";
 import {
   Typography, Button, Card, Form, Input, Select, Switch,
-  Collapse, Tag, Space, Popconfirm, Empty,
+  Collapse, Tag, Popconfirm, Empty, Tooltip,
 } from "antd";
-import { PlusOutlined, DeleteOutlined, HomeOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, HomeOutlined, HolderOutlined } from "@ant-design/icons";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { PageConfig, ComponentConfig, ComponentType } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 
@@ -27,6 +36,38 @@ const COMPONENT_TYPES: { value: ComponentType; label: string; icon: string; temp
   { value: "divider", label: "Divider", icon: "—" },
 ];
 
+function SortableComponentItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handle: React.ReactNode) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        position: "relative",
+        zIndex: isDragging ? 1 : undefined,
+      }}
+    >
+      {children(
+        <span
+          {...attributes}
+          {...listeners}
+          className="cursor-grab text-slate-300 hover:text-slate-500 pr-1"
+        >
+          <HolderOutlined />
+        </span>
+      )}
+    </div>
+  );
+}
+
 interface Props {
   pages: PageConfig[];
   onChange: (pages: PageConfig[]) => void;
@@ -37,10 +78,12 @@ function ComponentEditor({
   component,
   onChange,
   onDelete,
+  dragHandle,
 }: {
   component: ComponentConfig;
   onChange: (c: ComponentConfig) => void;
   onDelete: () => void;
+  dragHandle?: React.ReactNode;
 }) {
   const typeDef = COMPONENT_TYPES.find((t) => t.value === component.type);
 
@@ -55,6 +98,7 @@ function ComponentEditor({
       }
       title={
         <div className="flex items-center gap-2">
+          {dragHandle}
           <span>{typeDef?.icon}</span>
           <Text className="text-sm">{typeDef?.label || component.type}</Text>
         </div>
@@ -157,6 +201,10 @@ function PageEditor({
   onDelete: () => void;
   template: string;
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
   function addComponent(type: ComponentType) {
     onChange({
       ...page,
@@ -175,6 +223,15 @@ function PageEditor({
 
   function deleteComponent(idx: number) {
     onChange({ ...page, components: page.components.filter((_, i) => i !== idx) });
+  }
+
+  function handleComponentDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIdx = page.components.findIndex((c) => c.id === active.id);
+      const newIdx = page.components.findIndex((c) => c.id === over.id);
+      onChange({ ...page, components: arrayMove(page.components, oldIdx, newIdx) });
+    }
   }
 
   const availableComponents = COMPONENT_TYPES.filter(
@@ -206,14 +263,22 @@ function PageEditor({
             No components. Add one below.
           </div>
         )}
-        {page.components.map((comp, idx) => (
-          <ComponentEditor
-            key={comp.id}
-            component={comp}
-            onChange={(c) => updateComponent(idx, c)}
-            onDelete={() => deleteComponent(idx)}
-          />
-        ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleComponentDragEnd}>
+          <SortableContext items={page.components.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+            {page.components.map((comp, idx) => (
+              <SortableComponentItem key={comp.id} id={comp.id}>
+                {(handle) => (
+                  <ComponentEditor
+                    component={comp}
+                    onChange={(c) => updateComponent(idx, c)}
+                    onDelete={() => deleteComponent(idx)}
+                    dragHandle={handle}
+                  />
+                )}
+              </SortableComponentItem>
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
 
       <div>
@@ -235,7 +300,102 @@ function PageEditor({
   );
 }
 
+function SortablePagePanel({
+  page,
+  onUpdate,
+  onDelete,
+  onSetHome,
+  template,
+}: {
+  page: PageConfig;
+  onUpdate: (p: PageConfig) => void;
+  onDelete: () => void;
+  onSetHome: () => void;
+  template: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: page.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        position: "relative",
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      className="mb-1"
+    >
+      <Collapse
+        className="!border-slate-200"
+        items={[{
+          key: page.id,
+          label: (
+            <div className="flex items-center justify-between w-full">
+              <span className="flex items-center gap-2 font-medium">
+                <span
+                  {...attributes}
+                  {...listeners}
+                  className="cursor-grab text-slate-300 hover:text-slate-500"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <HolderOutlined />
+                </span>
+                {page.isHome && <HomeOutlined className="text-blue-500" />}
+                {page.name}
+                <span className="text-xs text-slate-400 font-normal">/{page.slug || ""}</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <Tag className="text-xs">{page.components.length} components</Tag>
+                {!page.isHome && (
+                  <>
+                    <Tooltip title="Set as landing page">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<HomeOutlined />}
+                        onClick={(e) => { e.stopPropagation(); onSetHome(); }}
+                        className="text-slate-400 hover:text-blue-500"
+                      />
+                    </Tooltip>
+                    <Popconfirm
+                      title="Delete this page?"
+                      onConfirm={(e) => { e?.stopPropagation(); onDelete(); }}
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </Popconfirm>
+                  </>
+                )}
+              </div>
+            </div>
+          ),
+          children: (
+            <PageEditor
+              page={page}
+              onChange={onUpdate}
+              onDelete={onDelete}
+              template={template}
+            />
+          ),
+        }]}
+      />
+    </div>
+  );
+}
+
 export default function PagesTab({ pages, onChange, template }: Props) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
   function addPage() {
     onChange([
       ...pages,
@@ -259,44 +419,24 @@ export default function PagesTab({ pages, onChange, template }: Props) {
     onChange(pages.filter((_, i) => i !== idx));
   }
 
-  const items = pages.map((page, idx) => ({
-    key: page.id,
-    label: (
-      <div className="flex items-center justify-between w-full">
-        <span className="flex items-center gap-2 font-medium">
-          {page.isHome && <HomeOutlined className="text-blue-500" />}
-          {page.name}
-          <span className="text-xs text-slate-400 font-normal">/{page.slug || ""}</span>
-        </span>
-        <div className="flex items-center gap-2">
-          <Tag className="text-xs">{page.components.length} components</Tag>
-          {!page.isHome && (
-            <Popconfirm
-              title="Delete this page?"
-              onConfirm={(e) => { e?.stopPropagation(); deletePage(idx); }}
-              okButtonProps={{ danger: true }}
-            >
-              <Button
-                type="text"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </Popconfirm>
-          )}
-        </div>
-      </div>
-    ),
-    children: (
-      <PageEditor
-        page={page}
-        onChange={(p) => updatePage(idx, p)}
-        onDelete={() => deletePage(idx)}
-        template={template}
-      />
-    ),
-  }));
+  function setHomePage(idx: number) {
+    onChange(
+      pages.map((p, i) => ({
+        ...p,
+        isHome: i === idx,
+        slug: i === idx ? "" : (p.isHome ? `page-${i + 1}` : p.slug),
+      }))
+    );
+  }
+
+  function handlePageDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIdx = pages.findIndex((p) => p.id === active.id);
+      const newIdx = pages.findIndex((p) => p.id === over.id);
+      onChange(arrayMove(pages, oldIdx, newIdx));
+    }
+  }
 
   return (
     <div className="p-6">
@@ -307,7 +447,24 @@ export default function PagesTab({ pages, onChange, template }: Props) {
         </Button>
       </div>
 
-      <Collapse items={items} accordion className="!border-slate-200" />
+      {pages.length === 0 ? (
+        <Empty description="No pages yet." />
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePageDragEnd}>
+          <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+            {pages.map((page, idx) => (
+              <SortablePagePanel
+                key={page.id}
+                page={page}
+                onUpdate={(p) => updatePage(idx, p)}
+                onDelete={() => deletePage(idx)}
+                onSetHome={() => setHomePage(idx)}
+                template={template}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      )}
     </div>
   );
 }

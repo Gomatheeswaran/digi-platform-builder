@@ -1,11 +1,20 @@
 "use client";
+import React from "react";
 import {
   Typography, Button, Card, Form, Input, Select, Switch,
-  Collapse, Tag, Space, Popconfirm, Divider,
+  Collapse, Tag, Popconfirm,
 } from "antd";
 import {
-  PlusOutlined, DeleteOutlined, PlusCircleOutlined,
+  PlusOutlined, DeleteOutlined, PlusCircleOutlined, HolderOutlined,
 } from "@ant-design/icons";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { DataModelConfig, FieldConfig, FieldType } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 
@@ -34,14 +43,48 @@ interface Props {
   onChange: (models: DataModelConfig[]) => void;
 }
 
+function SortableFieldItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handle: React.ReactNode) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        position: "relative",
+        zIndex: isDragging ? 1 : undefined,
+      }}
+    >
+      {children(
+        <span
+          {...attributes}
+          {...listeners}
+          className="cursor-grab text-slate-300 hover:text-slate-500 pr-1"
+        >
+          <HolderOutlined />
+        </span>
+      )}
+    </div>
+  );
+}
+
 function FieldEditor({
   field,
   onChange,
   onDelete,
+  dragHandle,
 }: {
   field: FieldConfig;
   onChange: (f: FieldConfig) => void;
   onDelete: () => void;
+  dragHandle?: React.ReactNode;
 }) {
   return (
     <Card
@@ -54,6 +97,7 @@ function FieldEditor({
       }
       title={
         <div className="flex items-center gap-2">
+          {dragHandle}
           <Text className="text-xs font-mono text-slate-500">{field.slug}</Text>
           <Tag className="text-xs">{field.type}</Tag>
           {field.required && <Tag color="red" className="text-xs">Required</Tag>}
@@ -126,12 +170,14 @@ function FieldEditor({
 function ModelEditor({
   model,
   onChange,
-  onDelete,
 }: {
   model: DataModelConfig;
   onChange: (m: DataModelConfig) => void;
-  onDelete: () => void;
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
   function addField() {
     onChange({
       ...model,
@@ -150,6 +196,15 @@ function ModelEditor({
 
   function deleteField(idx: number) {
     onChange({ ...model, fields: model.fields.filter((_, i) => i !== idx) });
+  }
+
+  function handleFieldDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIdx = model.fields.findIndex((f) => f.id === active.id);
+      const newIdx = model.fields.findIndex((f) => f.id === over.id);
+      onChange({ ...model, fields: arrayMove(model.fields, oldIdx, newIdx) });
+    }
   }
 
   return (
@@ -191,14 +246,22 @@ function ModelEditor({
         <Text className="text-xs text-slate-500 uppercase tracking-wide">Fields ({model.fields.length})</Text>
       </div>
 
-      {model.fields.map((field, idx) => (
-        <FieldEditor
-          key={field.id}
-          field={field}
-          onChange={(f) => updateField(idx, f)}
-          onDelete={() => deleteField(idx)}
-        />
-      ))}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleFieldDragEnd}>
+        <SortableContext items={model.fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+          {model.fields.map((field, idx) => (
+            <SortableFieldItem key={field.id} id={field.id}>
+              {(handle) => (
+                <FieldEditor
+                  field={field}
+                  onChange={(f) => updateField(idx, f)}
+                  onDelete={() => deleteField(idx)}
+                  dragHandle={handle}
+                />
+              )}
+            </SortableFieldItem>
+          ))}
+        </SortableContext>
+      </DndContext>
 
       <Button
         type="dashed"
@@ -269,7 +332,6 @@ export default function DataModelsTab({ models, onChange }: Props) {
       <ModelEditor
         model={model}
         onChange={(m) => updateModel(idx, m)}
-        onDelete={() => deleteModel(idx)}
       />
     ),
   }));
