@@ -1,7 +1,6 @@
-"use client";
 import "./globals.css";
-import { ConfigProvider, App } from "antd";
 import AntdRegistry from "./AntdRegistry";
+import Providers from "./providers";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,17 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-full">
         <AntdRegistry>
-          <ConfigProvider
-            theme={{
-              token: {
-                colorPrimary: "#1677ff",
-                borderRadius: 8,
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif',
-              },
-            }}
-          >
-            <App>{children}</App>
-          </ConfigProvider>
+          <Providers>{children}</Providers>
         </AntdRegistry>
       </body>
     </html>
