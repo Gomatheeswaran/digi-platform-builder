@@ -1,22 +1,22 @@
 "use client";
+import React from "react";
 import { createCache, extractStyle, StyleProvider } from "@ant-design/cssinjs";
 import { useServerInsertedHTML } from "next/navigation";
-import { useRef } from "react";
 
 export default function AntdRegistry({ children }: { children: React.ReactNode }) {
-  const cache = useRef(createCache());
-  const inserted = useRef(false);
+  const cache = React.useMemo(() => createCache(), []);
+  const isServerInserted = React.useRef(false);
 
   useServerInsertedHTML(() => {
-    if (inserted.current) return;
-    inserted.current = true;
+    if (isServerInserted.current) return;
+    isServerInserted.current = true;
     return (
       <style
         id="antd-ssr"
-        dangerouslySetInnerHTML={{ __html: extractStyle(cache.current, true) }}
+        dangerouslySetInnerHTML={{ __html: extractStyle(cache, true) }}
       />
     );
   });
 
-  return <StyleProvider cache={cache.current}>{children}</StyleProvider>;
+  return <StyleProvider cache={cache}>{children}</StyleProvider>;
 }
