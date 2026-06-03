@@ -13,6 +13,7 @@ interface Props {
   app: { id: string; name: string; template: AppTemplate; config: AppConfig };
   pathname: string;
   config: AppConfig;
+  basePath?: string;
 }
 
 function evaluateFormula(formula: string, values: Record<string, number>): number {
@@ -30,7 +31,7 @@ function evaluateFormula(formula: string, values: Record<string, number>): numbe
   }
 }
 
-export default function CalculatorRenderer({ app, pathname, config }: Props) {
+export default function CalculatorRenderer({ app, pathname, config, basePath = "" }: Props) {
   const [history, setHistory] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [form] = Form.useForm();
@@ -99,7 +100,7 @@ export default function CalculatorRenderer({ app, pathname, config }: Props) {
 
   return (
     <div>
-      <AppHeader config={config} appName={app.name} pathname={pathname} />
+      <AppHeader config={config} appName={app.name} pathname={pathname} basePath={basePath} />
 
       <main className="max-w-2xl mx-auto px-4 py-8">
         <Card className="!rounded-2xl !border-slate-100 shadow-sm mb-8">
@@ -163,7 +164,7 @@ export default function CalculatorRenderer({ app, pathname, config }: Props) {
         )}
       </main>
 
-      <AppFooter config={config} appName={app.name} />
+      <AppFooter config={config} appName={app.name} basePath={basePath} />
     </div>
   );
 }

@@ -14,6 +14,7 @@ interface Props {
   app: { id: string; name: string; template: AppTemplate; config: AppConfig };
   pathname: string;
   config: AppConfig;
+  basePath?: string;
 }
 
 // Render a field value inline with an optional icon
@@ -69,7 +70,7 @@ function FieldValue({ field, value }: { field: FieldConfig; value: unknown }) {
   }
 }
 
-export default function DirectoryRenderer({ app, pathname, config }: Props) {
+export default function DirectoryRenderer({ app, pathname, config, basePath = "" }: Props) {
   const [listings, setListings] = useState<ListingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -111,7 +112,7 @@ export default function DirectoryRenderer({ app, pathname, config }: Props) {
 
   return (
     <div>
-      <AppHeader config={config} appName={app.name} pathname={pathname} />
+      <AppHeader config={config} appName={app.name} pathname={pathname} basePath={basePath} />
 
       <main>
         <section
@@ -200,7 +201,7 @@ export default function DirectoryRenderer({ app, pathname, config }: Props) {
         </section>
       </main>
 
-      <AppFooter config={config} appName={app.name} />
+      <AppFooter config={config} appName={app.name} basePath={basePath} />
     </div>
   );
 }

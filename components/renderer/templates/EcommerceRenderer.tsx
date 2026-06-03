@@ -17,6 +17,7 @@ interface Props {
   app: { id: string; name: string; template: AppTemplate; config: AppConfig };
   pathname: string;
   config: AppConfig;
+  basePath?: string;
 }
 
 interface Product {
@@ -226,7 +227,7 @@ function CartDrawer({
   );
 }
 
-export default function EcommerceRenderer({ app, pathname, config }: Props) {
+export default function EcommerceRenderer({ app, pathname, config, basePath = "" }: Props) {
   const { message } = AntApp.useApp();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -269,7 +270,7 @@ export default function EcommerceRenderer({ app, pathname, config }: Props) {
         style={{ backgroundColor: config.theme.backgroundColor, borderBottom: `1px solid ${config.theme.primaryColor}22` }}
       >
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <a href="/" className="font-bold text-xl no-underline" style={{ color: config.theme.primaryColor }}>
+          <a href={basePath || "/"} className="font-bold text-xl no-underline" style={{ color: config.theme.primaryColor }}>
             {config.theme.logoUrl ? (
               <img src={config.theme.logoUrl} alt={app.name} className="h-8 w-auto" />
             ) : app.name}
@@ -277,7 +278,7 @@ export default function EcommerceRenderer({ app, pathname, config }: Props) {
 
           <nav className="hidden md:flex items-center gap-6">
             {config.navigation.items.map((item) => (
-              <a key={item.id} href={item.href} className="text-sm font-medium no-underline hover:opacity-75" style={{ color: config.theme.textColor }}>
+              <a key={item.id} href={basePath + item.href} className="text-sm font-medium no-underline hover:opacity-75" style={{ color: config.theme.textColor }}>
                 {item.label}
               </a>
             ))}
@@ -308,7 +309,7 @@ export default function EcommerceRenderer({ app, pathname, config }: Props) {
               {heroComponent.props.subtext as string || ""}
             </Paragraph>
             {!!(heroComponent.props.ctaText as string) && (
-              <Button type="primary" size="large" href={heroComponent.props.ctaHref as string || "/products"} className="mt-4">
+              <Button type="primary" size="large" href={basePath + (heroComponent.props.ctaHref as string || "/products")} className="mt-4">
                 {heroComponent.props.ctaText as string}
               </Button>
             )}
@@ -336,7 +337,7 @@ export default function EcommerceRenderer({ app, pathname, config }: Props) {
           <section className="max-w-4xl mx-auto px-4 py-12">
             <Title level={2}>Shopping Cart</Title>
             {cartItems.length === 0 ? (
-              <Empty description={<div><div>Your cart is empty</div><Button type="primary" href="/products" className="mt-4">Browse Products</Button></div>} />
+              <Empty description={<div><div>Your cart is empty</div><Button type="primary" href={basePath + "/products"} className="mt-4">Browse Products</Button></div>} />
             ) : (
               <div>
                 {cartItems.map((item) => (
@@ -364,7 +365,7 @@ export default function EcommerceRenderer({ app, pathname, config }: Props) {
         )}
       </main>
 
-      <AppFooter config={config} appName={app.name} />
+      <AppFooter config={config} appName={app.name} basePath={basePath} />
 
       <CartDrawer
         open={cartOpen}

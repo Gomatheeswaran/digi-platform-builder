@@ -13,6 +13,7 @@ interface Props {
   app: { id: string; name: string; template: AppTemplate; config: AppConfig };
   pathname: string;
   config: AppConfig;
+  basePath?: string;
 }
 
 function renderField(field: FieldConfig) {
@@ -60,7 +61,7 @@ function renderField(field: FieldConfig) {
   }
 }
 
-export default function FormCollectorRenderer({ app, pathname, config }: Props) {
+export default function FormCollectorRenderer({ app, pathname, config, basePath = "" }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -103,7 +104,7 @@ export default function FormCollectorRenderer({ app, pathname, config }: Props) 
 
   return (
     <div>
-      <AppHeader config={config} appName={app.name} pathname={pathname} />
+      <AppHeader config={config} appName={app.name} pathname={pathname} basePath={basePath} />
 
       <main className="max-w-lg mx-auto px-4 py-12">
         {submitted ? (
@@ -140,7 +141,7 @@ export default function FormCollectorRenderer({ app, pathname, config }: Props) 
         )}
       </main>
 
-      <AppFooter config={config} appName={app.name} />
+      <AppFooter config={config} appName={app.name} basePath={basePath} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ interface Props {
   app: { id: string; name: string; template: AppTemplate; config: AppConfig };
   pathname: string;
   config: AppConfig;
+  basePath?: string;
 }
 
 function renderComponent(comp: ComponentConfig, config: AppConfig, appId: string) {
@@ -144,7 +145,7 @@ function DynamicForm({
   );
 }
 
-export default function GenericRenderer({ app, pathname, config }: Props) {
+export default function GenericRenderer({ app, pathname, config, basePath = "" }: Props) {
   const currentPage = config.pages.find((p) =>
     pathname === "/" ? p.isHome : `/${p.slug}` === pathname
   ) || config.pages.find((p) => p.isHome) || config.pages[0];
@@ -159,13 +160,13 @@ export default function GenericRenderer({ app, pathname, config }: Props) {
 
   return (
     <div>
-      <AppHeader config={config} appName={app.name} pathname={pathname} />
+      <AppHeader config={config} appName={app.name} pathname={pathname} basePath={basePath} />
       <main>
         {currentPage.components
           .sort((a, b) => a.order - b.order)
           .map((comp) => renderComponent(comp, config, app.id))}
       </main>
-      <AppFooter config={config} appName={app.name} />
+      <AppFooter config={config} appName={app.name} basePath={basePath} />
     </div>
   );
 }

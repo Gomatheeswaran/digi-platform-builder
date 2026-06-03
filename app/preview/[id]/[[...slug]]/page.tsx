@@ -42,6 +42,7 @@ export default async function PreviewPage({ params }: Props) {
             config: app.config,
           }}
           pathname={pathname}
+          basePath={`/preview/${id}`}
         />
       </div>
     </div>

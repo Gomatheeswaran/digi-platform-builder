@@ -16,6 +16,7 @@ interface Props {
     config: AppConfig;
   };
   pathname: string;
+  basePath?: string;
 }
 
 const BORDER_RADIUS: Record<string, number> = {
@@ -26,12 +27,12 @@ const BORDER_RADIUS: Record<string, number> = {
   full: 999,
 };
 
-export default function TenantAppShell({ app, pathname }: Props) {
+export default function TenantAppShell({ app, pathname, basePath = "" }: Props) {
   const { config, template } = app;
   const { theme } = config;
 
   function renderTemplate() {
-    const props = { app, pathname, config };
+    const props = { app, pathname, config, basePath };
     switch (template) {
       case "ecommerce": return <EcommerceRenderer {...props} />;
       case "notepad": return <NotepadRenderer {...props} />;

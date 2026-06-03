@@ -18,6 +18,7 @@ interface Props {
   app: { id: string; name: string; template: AppTemplate; config: AppConfig };
   pathname: string;
   config: AppConfig;
+  basePath?: string;
 }
 
 function renderFormField(field: FieldConfig) {
@@ -86,7 +87,7 @@ function formatValue(field: FieldConfig, value: unknown): React.ReactNode {
   }
 }
 
-export default function NotepadRenderer({ app, pathname, config }: Props) {
+export default function NotepadRenderer({ app, pathname, config, basePath = "" }: Props) {
   const [notes, setNotes] = useState<NoteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -217,7 +218,7 @@ export default function NotepadRenderer({ app, pathname, config }: Props) {
 
   return (
     <div>
-      <AppHeader config={config} appName={app.name} pathname={pathname} />
+      <AppHeader config={config} appName={app.name} pathname={pathname} basePath={basePath} />
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
@@ -322,7 +323,7 @@ export default function NotepadRenderer({ app, pathname, config }: Props) {
         )}
       </main>
 
-      <AppFooter config={config} appName={app.name} />
+      <AppFooter config={config} appName={app.name} basePath={basePath} />
 
       <Modal
         title={editNote ? "Edit Note" : "New Note"}

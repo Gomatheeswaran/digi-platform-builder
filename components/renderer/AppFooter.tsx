@@ -3,9 +3,10 @@ import type { AppConfig } from "@/types";
 interface Props {
   config: AppConfig;
   appName: string;
+  basePath?: string;
 }
 
-export default function AppFooter({ config, appName }: Props) {
+export default function AppFooter({ config, appName, basePath = "" }: Props) {
   const { theme, navigation } = config;
 
   return (
@@ -24,7 +25,7 @@ export default function AppFooter({ config, appName }: Props) {
             {navigation.items.map((item) => (
               <a
                 key={item.id}
-                href={item.href}
+                href={basePath + item.href}
                 className="text-sm hover:opacity-75 transition-opacity no-underline"
                 style={{ color: theme.darkMode ? "#aaa" : "#64748b" }}
               >

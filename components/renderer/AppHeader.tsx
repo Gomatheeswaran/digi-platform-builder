@@ -9,9 +9,10 @@ interface Props {
   config: AppConfig;
   appName: string;
   pathname: string;
+  basePath?: string;
 }
 
-export default function AppHeader({ config, appName, pathname }: Props) {
+export default function AppHeader({ config, appName, pathname, basePath = "" }: Props) {
   const { theme, navigation } = config;
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -28,7 +29,7 @@ export default function AppHeader({ config, appName, pathname }: Props) {
     <header style={headerStyle}>
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo / Name */}
-        <Link href="/" className="flex items-center gap-2 no-underline">
+        <Link href={basePath || "/"} className="flex items-center gap-2 no-underline">
           {theme.logoUrl ? (
             <img src={theme.logoUrl} alt={appName} className="h-8 w-auto" />
           ) : (
@@ -46,7 +47,7 @@ export default function AppHeader({ config, appName, pathname }: Props) {
           {navigation.items.map((item) => (
             <Link
               key={item.id}
-              href={item.href}
+              href={basePath + item.href}
               className="text-sm font-medium no-underline hover:opacity-75 transition-opacity"
               style={{ color: pathname === item.href ? theme.primaryColor : theme.textColor }}
             >
@@ -58,7 +59,7 @@ export default function AppHeader({ config, appName, pathname }: Props) {
         {/* Right side */}
         <div className="flex items-center gap-3">
           {navigation.cartEnabled && (
-            <Link href="/cart">
+            <Link href={basePath + "/cart"}>
               <Badge count={0} showZero={false}>
                 <Button type="text" icon={<ShoppingCartOutlined />} />
               </Badge>
@@ -92,7 +93,7 @@ export default function AppHeader({ config, appName, pathname }: Props) {
           {navigation.items.map((item) => (
             <Link
               key={item.id}
-              href={item.href}
+              href={basePath + item.href}
               className="block py-2 text-sm font-medium no-underline"
               style={{ color: theme.textColor }}
               onClick={() => setMobileOpen(false)}
