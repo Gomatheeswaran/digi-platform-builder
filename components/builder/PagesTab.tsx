@@ -6,7 +6,7 @@ import {
 } from "antd";
 import { PlusOutlined, DeleteOutlined, HomeOutlined, HolderOutlined } from "@ant-design/icons";
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -202,7 +202,8 @@ function PageEditor({
   template: string;
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   function addComponent(type: ComponentType) {
@@ -393,7 +394,8 @@ function SortablePagePanel({
 
 export default function PagesTab({ pages, onChange, template }: Props) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   function addPage() {

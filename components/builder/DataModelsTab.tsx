@@ -8,7 +8,7 @@ import {
   PlusOutlined, DeleteOutlined, PlusCircleOutlined, HolderOutlined,
 } from "@ant-design/icons";
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -175,7 +175,8 @@ function ModelEditor({
   onChange: (m: DataModelConfig) => void;
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   function addField() {
