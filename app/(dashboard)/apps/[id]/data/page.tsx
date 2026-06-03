@@ -290,7 +290,7 @@ function ModelDataTab({
         title={editing ? `Edit ${model.name}` : `Add ${model.name}`}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        styles={{ wrapper: { width: 480 } }}
+        styles={{ wrapper: { width: "min(480px, 100vw)" } }}
         footer={
           <div className="flex justify-end gap-2">
             <Button onClick={() => setDrawerOpen(false)}>Cancel</Button>
@@ -330,13 +330,13 @@ export default function AppDataPage({ params }: { params: Promise<{ id: string }
   return (
     <div className="max-w-5xl">
       <div className="flex items-center gap-3 mb-8">
-        <Link href={`/apps/${id}`}><Button icon={<ArrowLeftOutlined />} type="text" /></Link>
-        <div>
-          <Title level={3} className="!mb-0">
+        <Link href={`/apps/${id}`}><Button icon={<ArrowLeftOutlined />} type="text" className="flex-shrink-0" /></Link>
+        <div className="min-w-0">
+          <Title level={4} className="!mb-0 truncate">
             <DatabaseOutlined className="mr-2 text-blue-500" />
             {appData.name} — Data Manager
           </Title>
-          <Text className="text-slate-400">View and manage all data in your app</Text>
+          <Text className="text-slate-400 text-sm">View and manage all data in your app</Text>
         </div>
       </div>
 

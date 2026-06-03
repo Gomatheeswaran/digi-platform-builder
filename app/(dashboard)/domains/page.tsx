@@ -1,11 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import {
-  Card, Row, Col, Typography, Button, Tag, Spin, Empty, Alert,
-} from "antd";
+import { Typography, Button, Tag, Spin } from "antd";
 import {
   GlobalOutlined, CheckCircleOutlined, ClockCircleOutlined,
-  SafetyCertificateOutlined, SettingOutlined, PlusOutlined,
+  SafetyCertificateOutlined, SettingOutlined, PlusOutlined, ExportOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 
@@ -15,14 +13,14 @@ interface AppWithDomain {
   id: string;
   name: string;
   slug: string;
-  template: string;
-  status: string;
   customDomain: string;
   domainVerified: boolean;
   sslStatus: string;
-  plan: string;
 }
 
+const SSL_LABEL: Record<string, string> = {
+  active: "SSL Active", pending: "SSL Pending", failed: "SSL Failed", none: "No SSL",
+};
 const SSL_COLOR: Record<string, string> = {
   active: "success", pending: "processing", failed: "error", none: "default",
 };
@@ -34,109 +32,125 @@ export default function DomainsPage() {
   useEffect(() => {
     fetch("/api/apps")
       .then((r) => r.json())
-      .then((data: AppWithDomain[]) => {
-        const withDomain = Array.isArray(data)
-          ? data.filter((a) => a.customDomain)
-          : [];
-        setApps(withDomain);
+      .then((data) => {
+        setApps(
+          Array.isArray(data) ? data.filter((a: AppWithDomain) => a.customDomain) : []
+        );
       })
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="max-w-4xl">
-      <div className="flex items-center justify-between gap-3 mb-8">
-        <div className="min-w-0">
-          <Title level={3} className="!mb-1">Custom Domains</Title>
-          <Text className="text-slate-400">Manage domains connected to your apps</Text>
-        </div>
-        <Link href="/apps" className="flex-shrink-0">
-          <Button type="primary" icon={<PlusOutlined />}>Connect Domain</Button>
-        </Link>
+    <div className="max-w-2xl">
+      <div className="mb-6">
+        <Title level={3} className="!mb-0.5">Custom Domains</Title>
+        <Text className="text-slate-400 text-sm">Domains connected to your apps</Text>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><Spin size="large" /></div>
+        <div className="flex justify-center py-20"><Spin size="large" /></div>
       ) : apps.length === 0 ? (
-        <Card className="!rounded-xl !border-slate-100">
-          <Empty
-            image={<GlobalOutlined className="text-6xl text-slate-200" />}
-            description={
-              <div className="text-center">
-                <Text className="text-slate-400 block mb-2">No custom domains yet.</Text>
-                <Text className="text-slate-400 text-sm block mb-4">
-                  Connect a domain to your app via App Settings.
-                </Text>
-                <Link href="/apps">
-                  <Button type="primary" icon={<SettingOutlined />}>Go to My Apps</Button>
-                </Link>
-              </div>
-            }
-          />
-        </Card>
+        <div className="flex flex-col items-center text-center py-16 px-6">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+            <GlobalOutlined className="text-2xl text-slate-300" />
+          </div>
+          <Title level={5} className="!mb-1 !text-slate-600">No domains yet</Title>
+          <Text className="text-slate-400 text-sm block mb-6 max-w-xs">
+            Connect a custom domain to any app from its Settings page.
+          </Text>
+          <Link href="/apps">
+            <Button type="primary" size="large" icon={<PlusOutlined />}>
+              Go to My Apps
+            </Button>
+          </Link>
+        </div>
       ) : (
-        <Row gutter={[16, 16]}>
-          {apps.map((app) => (
-            <Col xs={24} key={app.id}>
-              <Card className="!rounded-xl !border-slate-100">
-                <div className="flex flex-wrap items-start sm:items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <GlobalOutlined className="text-blue-500 flex-shrink-0" />
-                      <Text strong className="text-slate-800 text-base break-all">
-                        {app.customDomain}
-                      </Text>
-                      <Tag
-                        color={app.domainVerified ? "success" : "warning"}
-                        icon={app.domainVerified ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
-                      >
-                        {app.domainVerified ? "DNS Verified" : "DNS Pending"}
-                      </Tag>
-                      <Tag
-                        color={SSL_COLOR[app.sslStatus] || "default"}
-                        icon={<SafetyCertificateOutlined />}
-                      >
-                        SSL: {app.sslStatus}
-                      </Tag>
-                    </div>
-                    <Text className="text-slate-400 text-sm">
-                      App: <span className="font-medium text-slate-600">{app.name}</span>
-                      <span className="ml-2 text-slate-300">·</span>
-                      <span className="ml-2">/{app.slug}</span>
-                    </Text>
+        <div className="space-y-3">
+          {apps.map((app) => {
+            const verified = app.domainVerified;
+            const borderColor = verified ? "#4ade80" : "#fbbf24";
+            return (
+              <div
+                key={app.id}
+                className="bg-white rounded-2xl overflow-hidden"
+                style={{ border: "1px solid #f0f0f0", borderLeft: `4px solid ${borderColor}` }}
+              >
+                <div className="p-4">
+                  {/* Domain + status dot */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ background: borderColor }}
+                    />
+                    <span className="font-semibold text-slate-800 text-base leading-tight break-all">
+                      {app.customDomain}
+                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-2 flex-shrink-0">
-                    {app.domainVerified && (
-                      <a href={`https://${app.customDomain}`} target="_blank" rel="noreferrer">
-                        <Button size="small" icon={<GlobalOutlined />}>Visit</Button>
-                      </a>
-                    )}
-                    <Link href={`/apps/${app.id}/settings`}>
-                      <Button size="small" icon={<SettingOutlined />}>Settings</Button>
-                    </Link>
-                  </div>
-                </div>
 
-                {!app.domainVerified && (
-                  <Alert
-                    className="mt-3"
-                    type="warning"
-                    showIcon
-                    message="DNS not yet verified"
-                    description={
-                      <span>
-                        Point your domain&apos;s A record to the server IP, then{" "}
-                        <Link href={`/apps/${app.id}/settings`} className="font-medium">
-                          verify in App Settings
-                        </Link>.
-                      </span>
-                    }
-                  />
-                )}
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                  {/* App name */}
+                  <Text className="text-slate-400 text-xs block pl-[18px] mb-3">
+                    {app.name} · /{app.slug}
+                  </Text>
+
+                  {/* Status badges */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <Tag
+                      color={verified ? "success" : "warning"}
+                      icon={verified ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+                      className="!rounded-full !px-3"
+                    >
+                      {verified ? "DNS Verified" : "DNS Pending"}
+                    </Tag>
+                    <Tag
+                      color={SSL_COLOR[app.sslStatus] || "default"}
+                      icon={<SafetyCertificateOutlined />}
+                      className="!rounded-full !px-3"
+                    >
+                      {SSL_LABEL[app.sslStatus] || app.sslStatus}
+                    </Tag>
+                  </div>
+
+                  {/* DNS pending hint */}
+                  {!verified && (
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 mb-4 text-xs text-amber-700 leading-relaxed">
+                      Add an <strong>A record</strong> pointing to the server IP at your
+                      domain registrar, then verify below.
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {verified ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <a href={`https://${app.customDomain}`} target="_blank" rel="noreferrer">
+                        <Button block icon={<ExportOutlined />}>Visit Live</Button>
+                      </a>
+                      <Link href={`/apps/${app.id}/settings`}>
+                        <Button block icon={<SettingOutlined />}>Settings</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link href={`/apps/${app.id}/settings`}>
+                      <Button type="primary" block icon={<SettingOutlined />}>
+                        Verify in Settings
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          <Link href="/apps">
+            <Button
+              block
+              type="dashed"
+              icon={<PlusOutlined />}
+              className="!rounded-2xl !h-11 !mt-1"
+            >
+              Connect another domain
+            </Button>
+          </Link>
+        </div>
       )}
     </div>
   );

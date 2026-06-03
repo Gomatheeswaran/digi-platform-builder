@@ -1,31 +1,39 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Layout, Menu, Typography, Avatar, Dropdown } from "antd";
+import { Layout, Menu, Typography, Avatar, Dropdown, Drawer } from "antd";
 import {
   DashboardOutlined, TeamOutlined, AppstoreOutlined,
   GlobalOutlined, SettingOutlined, LogoutOutlined,
-  UserOutlined, SafetyCertificateOutlined,
+  UserOutlined, SafetyCertificateOutlined, MenuOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-const { Sider, Header, Content } = Layout;
+const { Header, Content } = Layout;
 const { Text } = Typography;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {
-        if (d.role !== "super_admin") {
-          router.push("/dashboard");
-        } else {
-          setUser(d);
-        }
+        if (d.role !== "super_admin") router.push("/dashboard");
+        else setUser(d);
       })
       .catch(() => router.push("/login"));
   }, [router]);
@@ -45,40 +53,85 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push("/login");
   }
 
-  return (
-    <Layout className="min-h-screen">
-      <Sider width={240} className="!bg-slate-950" style={{ boxShadow: "2px 0 8px rgba(0,0,0,.15)" }}>
-        <div className="h-16 flex items-center px-5 border-b border-slate-800 gap-3">
-          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-            <SafetyCertificateOutlined />
-          </div>
-          <span className="font-semibold text-white text-sm">Super Admin</span>
-        </div>
+  const menuItems = navItems.map((item) => ({
+    key: item.key,
+    icon: item.icon,
+    label: <Link href={item.key} onClick={() => setMobileOpen(false)}>{item.label}</Link>,
+  }));
 
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      <div className="h-16 flex items-center px-5 border-b border-slate-800 gap-3 flex-shrink-0">
+        <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+          <SafetyCertificateOutlined />
+        </div>
+        <span className="font-semibold text-white text-sm">Super Admin</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
           className="!bg-slate-950 !border-0 mt-4"
-          items={navItems.map((item) => ({
-            key: item.key,
-            icon: item.icon,
-            label: <Link href={item.key}>{item.label}</Link>,
-          }))}
+          items={menuItems}
         />
+      </div>
 
-        {user && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
-            <Link href="/dashboard" className="flex items-center gap-2 text-slate-400 hover:text-slate-200 text-xs mb-2">
-              ← Back to Dashboard
-            </Link>
-          </div>
-        )}
-      </Sider>
+      {user && (
+        <div className="p-4 border-t border-slate-800 flex-shrink-0">
+          <Link
+            href="/dashboard"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-2 text-slate-400 hover:text-slate-200 text-xs"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <Layout className="min-h-screen">
+      {/* Desktop sidebar */}
+      {!isMobile && (
+        <Layout.Sider width={240} className="!bg-slate-950" style={{ boxShadow: "2px 0 8px rgba(0,0,0,.15)" }}>
+          {sidebarContent}
+        </Layout.Sider>
+      )}
+
+      {/* Mobile drawer */}
+      {isMobile && (
+        <Drawer
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          placement="left"
+          styles={{
+            wrapper: { width: 240 },
+            body: { padding: 0, background: "#030712", display: "flex", flexDirection: "column", height: "100%" },
+            header: { display: "none" },
+            mask: { background: "rgba(0,0,0,0.6)" },
+          }}
+        >
+          {sidebarContent}
+        </Drawer>
+      )}
 
       <Layout>
-        <Header className="!bg-white !px-6 flex items-center justify-between border-b border-slate-100 h-16">
-          <Text className="font-medium text-slate-600">Admin Panel</Text>
+        <Header className="!bg-white !px-4 flex items-center justify-between border-b border-slate-100 h-14">
+          <div className="flex items-center gap-3">
+            {isMobile && (
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="text-slate-500 hover:text-slate-800 transition-colors p-1"
+              >
+                <MenuOutlined className="text-lg" />
+              </button>
+            )}
+            <Text className="font-medium text-slate-600 text-sm">Admin Panel</Text>
+          </div>
+
           {user && (
             <Dropdown
               menu={{
@@ -91,7 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               trigger={["click"]}
               placement="bottomRight"
             >
-              <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-1.5">
                 <div className="text-right hidden sm:block">
                   <div className="text-sm font-medium text-slate-700">{user.name}</div>
                   <div className="text-xs text-red-500">super admin</div>
@@ -102,7 +155,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           )}
         </Header>
 
-        <Content className="p-6 bg-slate-50 min-h-[calc(100vh-64px)]">
+        <Content className="p-3 sm:p-4 md:p-6 bg-slate-50 min-h-[calc(100vh-56px)]">
           {children}
         </Content>
       </Layout>
