@@ -6,6 +6,7 @@ import {
 } from "antd";
 import {
   PlusOutlined, DeleteOutlined, PlusCircleOutlined, HolderOutlined,
+  ArrowUpOutlined, ArrowDownOutlined,
 } from "@ant-design/icons";
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
@@ -80,20 +81,28 @@ function FieldEditor({
   onChange,
   onDelete,
   dragHandle,
+  onMoveUp,
+  onMoveDown,
 }: {
   field: FieldConfig;
   onChange: (f: FieldConfig) => void;
   onDelete: () => void;
   dragHandle?: React.ReactNode;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   return (
     <Card
       size="small"
       className="!border-slate-200 !mb-2"
       extra={
-        <Popconfirm title="Delete this field?" onConfirm={onDelete} okButtonProps={{ danger: true }}>
-          <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <div className="flex items-center gap-1">
+          <Button type="text" size="small" icon={<ArrowUpOutlined />} onClick={onMoveUp} disabled={!onMoveUp} />
+          <Button type="text" size="small" icon={<ArrowDownOutlined />} onClick={onMoveDown} disabled={!onMoveDown} />
+          <Popconfirm title="Delete this field?" onConfirm={onDelete} okButtonProps={{ danger: true }}>
+            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </div>
       }
       title={
         <div className="flex items-center gap-2">
@@ -257,6 +266,8 @@ function ModelEditor({
                   onChange={(f) => updateField(idx, f)}
                   onDelete={() => deleteField(idx)}
                   dragHandle={handle}
+                  onMoveUp={idx > 0 ? () => onChange({ ...model, fields: arrayMove(model.fields, idx, idx - 1) }) : undefined}
+                  onMoveDown={idx < model.fields.length - 1 ? () => onChange({ ...model, fields: arrayMove(model.fields, idx, idx + 1) }) : undefined}
                 />
               )}
             </SortableFieldItem>

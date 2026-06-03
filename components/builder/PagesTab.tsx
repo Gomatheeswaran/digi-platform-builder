@@ -4,7 +4,7 @@ import {
   Typography, Button, Card, Form, Input, Switch,
   Collapse, Tag, Popconfirm, Empty, Tooltip,
 } from "antd";
-import { PlusOutlined, DeleteOutlined, HomeOutlined, HolderOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, HomeOutlined, HolderOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -79,11 +79,15 @@ function ComponentEditor({
   onChange,
   onDelete,
   dragHandle,
+  onMoveUp,
+  onMoveDown,
 }: {
   component: ComponentConfig;
   onChange: (c: ComponentConfig) => void;
   onDelete: () => void;
   dragHandle?: React.ReactNode;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const typeDef = COMPONENT_TYPES.find((t) => t.value === component.type);
 
@@ -92,9 +96,13 @@ function ComponentEditor({
       size="small"
       className="!border-slate-200 !mb-2"
       extra={
-        <Popconfirm title="Remove this component?" onConfirm={onDelete} okButtonProps={{ danger: true }}>
-          <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <div className="flex items-center gap-1">
+          <Button type="text" size="small" icon={<ArrowUpOutlined />} onClick={onMoveUp} disabled={!onMoveUp} />
+          <Button type="text" size="small" icon={<ArrowDownOutlined />} onClick={onMoveDown} disabled={!onMoveDown} />
+          <Popconfirm title="Remove this component?" onConfirm={onDelete} okButtonProps={{ danger: true }}>
+            <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </div>
       }
       title={
         <div className="flex items-center gap-2">
@@ -272,6 +280,8 @@ function PageEditor({
                     onChange={(c) => updateComponent(idx, c)}
                     onDelete={() => deleteComponent(idx)}
                     dragHandle={handle}
+                    onMoveUp={idx > 0 ? () => onChange({ ...page, components: arrayMove(page.components, idx, idx - 1) }) : undefined}
+                    onMoveDown={idx < page.components.length - 1 ? () => onChange({ ...page, components: arrayMove(page.components, idx, idx + 1) }) : undefined}
                   />
                 )}
               </SortableComponentItem>
@@ -305,12 +315,16 @@ function SortablePagePanel({
   onDelete,
   onSetHome,
   template,
+  onMoveUp,
+  onMoveDown,
 }: {
   page: PageConfig;
   onUpdate: (p: PageConfig) => void;
   onDelete: () => void;
   onSetHome: () => void;
   template: string;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: page.id });
 
@@ -345,8 +359,10 @@ function SortablePagePanel({
                 {page.name}
                 <span className="text-xs text-slate-400 font-normal">/{page.slug || ""}</span>
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Tag className="text-xs">{page.components.length} components</Tag>
+                <Button type="text" size="small" icon={<ArrowUpOutlined />} disabled={!onMoveUp} onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }} />
+                <Button type="text" size="small" icon={<ArrowDownOutlined />} disabled={!onMoveDown} onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }} />
                 {!page.isHome && (
                   <>
                     <Tooltip title="Set as landing page">
@@ -459,6 +475,8 @@ export default function PagesTab({ pages, onChange, template }: Props) {
                 onDelete={() => deletePage(idx)}
                 onSetHome={() => setHomePage(idx)}
                 template={template}
+                onMoveUp={idx > 0 ? () => onChange(arrayMove(pages, idx, idx - 1)) : undefined}
+                onMoveDown={idx < pages.length - 1 ? () => onChange(arrayMove(pages, idx, idx + 1)) : undefined}
               />
             ))}
           </SortableContext>
