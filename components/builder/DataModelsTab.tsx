@@ -104,7 +104,7 @@ function FieldEditor({
         </div>
       }
     >
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Form.Item label="Field Name" className="!mb-1">
           <Input
             size="small"
@@ -125,7 +125,7 @@ function FieldEditor({
           />
         </Form.Item>
         {(field.type === "select" || field.type === "multiselect") && (
-          <Form.Item label="Options (comma-separated)" className="!mb-1 col-span-2">
+          <Form.Item label="Options (comma-separated)" className="!mb-1 sm:col-span-2">
             <Input
               size="small"
               value={field.options?.join(", ") || ""}
@@ -137,7 +137,7 @@ function FieldEditor({
           </Form.Item>
         )}
         {field.type === "formula" && (
-          <Form.Item label="Formula" className="!mb-1 col-span-2" help="Use field slugs. E.g: price * quantity">
+          <Form.Item label="Formula" className="!mb-1 sm:col-span-2" help="Use field slugs. E.g: price * quantity">
             <Input
               size="small"
               value={field.formula || ""}
@@ -209,7 +209,7 @@ function ModelEditor({
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <Form.Item label="Model Name" className="!mb-0">
           <Input
             value={model.name}
@@ -337,7 +337,7 @@ export default function DataModelsTab({ models, onChange }: Props) {
   }));
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <Title level={5} className="!mb-0">Data Models</Title>
         <Button type="primary" size="small" icon={<PlusOutlined />} onClick={addModel}>

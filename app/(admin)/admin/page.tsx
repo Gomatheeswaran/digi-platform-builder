@@ -88,6 +88,7 @@ export default function AdminDashboard() {
               rowKey="_id"
               size="small"
               pagination={false}
+              scroll={{ x: "max-content" }}
               columns={[
                 {
                   title: "Name",

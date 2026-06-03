@@ -1,5 +1,5 @@
 "use client";
-import { Form, Input, Switch, Typography, Card, Divider } from "antd";
+import { Form, Input, Switch, Typography, Card } from "antd";
 import type { IntegrationsConfig } from "@/types";
 
 const { Title, Text } = Typography;
@@ -15,7 +15,7 @@ export default function IntegrationsTab({ integrations, onChange }: Props) {
   const ga = integrations.googleAnalytics || { enabled: false, measurementId: "" };
 
   return (
-    <div className="p-6 max-w-lg">
+    <div className="p-4 sm:p-6 max-w-lg">
       <Title level={5} className="!mb-6">Integrations</Title>
 
       {/* Razorpay */}
