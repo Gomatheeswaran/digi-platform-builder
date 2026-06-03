@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 const COOKIE_NAME = "ap_token";
 
 export function signToken(payload: { userId: string; role: string }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 }
 
 export function verifyToken(token: string): { userId: string; role: string } | null {
@@ -43,6 +43,6 @@ export function cookieOptions(token = "") {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60, // 1 hour
   };
 }
