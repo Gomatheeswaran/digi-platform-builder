@@ -52,7 +52,7 @@ export default function BillingPage() {
   useEffect(() => {
     fetch("/api/apps")
       .then((r) => r.json())
-      .then((data) => setApps(data.apps || []))
+      .then((data) => setApps(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
   }, []);
 

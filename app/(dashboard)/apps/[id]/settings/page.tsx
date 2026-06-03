@@ -25,7 +25,6 @@ export default function AppSettingsPage({ params }: { params: Promise<{ id: stri
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [appForm] = Form.useForm();
-  const [domainForm] = Form.useForm();
 
   useEffect(() => {
     Promise.all([
@@ -176,7 +175,7 @@ export default function AppSettingsPage({ params }: { params: Promise<{ id: stri
               Connect your own domain (e.g. <code>myshop.com</code>) to host this app.
               Requires a paid plan.
             </Paragraph>
-            <Form layout="vertical" form={domainForm} onFinish={connectDomain}>
+            <Form layout="vertical" onFinish={connectDomain}>
               <Form.Item
                 name="domain"
                 label="Your Domain"
