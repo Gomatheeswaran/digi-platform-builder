@@ -46,13 +46,13 @@ export default function ThemeTab({ theme, onChange }: Props) {
   }
 
   return (
-    <div className="p-6 max-w-lg">
+    <div className="p-4 sm:p-6 max-w-lg">
       <Title level={5} className="!mb-6">Theme & Branding</Title>
 
       <Form layout="vertical" component="div">
         <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-2 mb-3 border-b pb-1">Colors</div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Form.Item label="Primary Color" className="!mb-0">
             <div className="flex items-center gap-2">
               <ColorPicker

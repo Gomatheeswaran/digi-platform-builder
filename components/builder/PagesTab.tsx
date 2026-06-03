@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import {
-  Typography, Button, Card, Form, Input, Select, Switch,
+  Typography, Button, Card, Form, Input, Switch,
   Collapse, Tag, Popconfirm, Empty, Tooltip,
 } from "antd";
 import { PlusOutlined, DeleteOutlined, HomeOutlined, HolderOutlined } from "@ant-design/icons";
@@ -104,13 +104,13 @@ function ComponentEditor({
         </div>
       }
     >
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {component.type === "hero" && (
           <>
-            <Form.Item label="Heading" className="!mb-1 col-span-2">
+            <Form.Item label="Heading" className="!mb-1 sm:col-span-2">
               <Input size="small" value={component.props.heading as string || ""} onChange={(e) => onChange({ ...component, props: { ...component.props, heading: e.target.value } })} />
             </Form.Item>
-            <Form.Item label="Subtext" className="!mb-1 col-span-2">
+            <Form.Item label="Subtext" className="!mb-1 sm:col-span-2">
               <Input size="small" value={component.props.subtext as string || ""} onChange={(e) => onChange({ ...component, props: { ...component.props, subtext: e.target.value } })} />
             </Form.Item>
             <Form.Item label="CTA Button Text" className="!mb-1">
@@ -123,7 +123,7 @@ function ComponentEditor({
         )}
         {(component.type === "product_grid" || component.type === "table") && (
           <>
-            <Form.Item label="Title" className="!mb-1 col-span-2">
+            <Form.Item label="Title" className="!mb-1 sm:col-span-2">
               <Input size="small" value={component.props.title as string || ""} onChange={(e) => onChange({ ...component, props: { ...component.props, title: e.target.value } })} />
             </Form.Item>
             <Form.Item label="Data Source (model slug)" className="!mb-1">
@@ -137,7 +137,7 @@ function ComponentEditor({
           </>
         )}
         {component.type === "text_block" && (
-          <Form.Item label="Content" className="!mb-1 col-span-2">
+          <Form.Item label="Content" className="!mb-1 sm:col-span-2">
             <Input.TextArea size="small" value={component.props.content as string || ""} rows={3} onChange={(e) => onChange({ ...component, props: { ...component.props, content: e.target.value } })} />
           </Form.Item>
         )}
@@ -181,7 +181,7 @@ function ComponentEditor({
           </>
         )}
         {(component.type === "image_banner" || component.type === "gallery") && (
-          <Form.Item label="Image URL" className="!mb-1 col-span-2">
+          <Form.Item label="Image URL" className="!mb-1 sm:col-span-2">
             <Input size="small" value={component.props.imageUrl as string || ""} onChange={(e) => onChange({ ...component, props: { ...component.props, imageUrl: e.target.value } })} placeholder="https://..." />
           </Form.Item>
         )}
@@ -193,12 +193,10 @@ function ComponentEditor({
 function PageEditor({
   page,
   onChange,
-  onDelete,
   template,
 }: {
   page: PageConfig;
   onChange: (p: PageConfig) => void;
-  onDelete: () => void;
   template: string;
 }) {
   const sensors = useSensors(
@@ -241,7 +239,7 @@ function PageEditor({
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <Form.Item label="Page Name" className="!mb-0">
           <Input value={page.name} onChange={(e) => onChange({ ...page, name: e.target.value })} />
         </Form.Item>
@@ -249,7 +247,7 @@ function PageEditor({
           <Input
             value={page.slug}
             onChange={(e) => onChange({ ...page, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
-            addonBefore="/"
+            prefix="/"
             disabled={page.isHome}
           />
         </Form.Item>
@@ -382,7 +380,6 @@ function SortablePagePanel({
             <PageEditor
               page={page}
               onChange={onUpdate}
-              onDelete={onDelete}
               template={template}
             />
           ),
@@ -441,7 +438,7 @@ export default function PagesTab({ pages, onChange, template }: Props) {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <Title level={5} className="!mb-0">Pages</Title>
         <Button type="primary" size="small" icon={<PlusOutlined />} onClick={addPage}>

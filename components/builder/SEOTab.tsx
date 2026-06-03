@@ -15,7 +15,7 @@ export default function SEOTab({ seo, onChange }: Props) {
   }
 
   return (
-    <div className="p-6 max-w-lg">
+    <div className="p-4 sm:p-6 max-w-lg">
       <Title level={5} className="!mb-6">SEO & Meta Tags</Title>
       <Form layout="vertical" component="div">
         <Form.Item label="Page Title" help="Shown in browser tab and search results">
