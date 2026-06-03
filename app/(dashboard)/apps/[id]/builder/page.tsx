@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, use } from "react";
-import { Tabs, Typography, Button, Spin, Alert, App, Tag, Space } from "antd";
+import { Tabs, Typography, Button, Spin, Alert, App, Tag } from "antd";
 import { ArrowLeftOutlined, SaveOutlined, EyeOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import type { AppConfig } from "@/types";
@@ -110,30 +110,33 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
   return (
     <div>
       {/* Builder Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link href={`/apps/${id}`}><Button icon={<ArrowLeftOutlined />} type="text" /></Link>
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-2xl">{TEMPLATE_ICONS[template] || "📦"}</span>
-          <Title level={4} className="!mb-0">{app.name as string}</Title>
-          <Tag color={(app.status as string) === "live" ? "success" : "default"} className="capitalize">
-            {app.status as string}
-          </Tag>
-          {dirty && <Tag color="warning">Unsaved changes</Tag>}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <Link href={`/apps/${id}`}><Button icon={<ArrowLeftOutlined />} type="text" className="flex-shrink-0" /></Link>
+          <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+            <span className="text-2xl flex-shrink-0">{TEMPLATE_ICONS[template] || "📦"}</span>
+            <Title level={4} className="!mb-0 truncate">{app.name as string}</Title>
+            <Tag color={(app.status as string) === "live" ? "success" : "default"} className="capitalize flex-shrink-0">
+              {app.status as string}
+            </Tag>
+            {dirty && <Tag color="warning" className="flex-shrink-0">Unsaved changes</Tag>}
+          </div>
         </div>
-        <Space>
+        <div className="flex flex-wrap gap-2 pl-10">
           <Link href={`/preview/${id}`} target="_blank">
-            <Button icon={<EyeOutlined />}>Preview</Button>
+            <Button icon={<EyeOutlined />} size="small">Preview</Button>
           </Link>
           <Button
             type="primary"
             icon={<SaveOutlined />}
+            size="small"
             loading={saving}
             disabled={!dirty}
             onClick={saveConfig}
           >
             Save Changes
           </Button>
-        </Space>
+        </div>
       </div>
 
       {/* Tip banner */}
@@ -158,7 +161,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
           tabPosition={isMobile ? "top" : "left"}
           size="small"
           className="builder-tabs"
-          tabBarStyle={{ width: 160, paddingTop: 8, paddingBottom: 8, background: "#fafafa", borderRight: "1px solid #f0f0f0" }}
+          tabBarStyle={isMobile ? undefined : { width: 160, paddingTop: 8, paddingBottom: 8, background: "#fafafa", borderRight: "1px solid #f0f0f0" }}
         />
       </div>
     </div>

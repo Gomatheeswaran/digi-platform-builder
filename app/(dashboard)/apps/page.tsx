@@ -131,30 +131,30 @@ export default function AppsPage() {
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-8">
-        <div>
+      <div className="flex items-center justify-between gap-3 mb-8">
+        <div className="min-w-0">
           <Title level={3} className="!mb-1">My Apps</Title>
           <Text className="text-slate-400">{apps.length} app{apps.length !== 1 ? "s" : ""} total</Text>
         </div>
-        <Link href="/apps/new">
-          <Button type="primary" icon={<PlusOutlined />} size="large">New App</Button>
+        <Link href="/apps/new" className="flex-shrink-0">
+          <Button type="primary" icon={<PlusOutlined />}>New App</Button>
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-6">
         <Input
           placeholder="Search apps..."
           prefix={<SearchOutlined className="text-slate-400" />}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="flex-1 min-w-[160px] max-w-xs"
           allowClear
         />
         <Select
           value={statusFilter}
           onChange={setStatusFilter}
-          style={{ width: 140 }}
+          style={{ minWidth: 130 }}
           options={[
             { value: "all", label: "All Status" },
             { value: "live", label: "Live" },

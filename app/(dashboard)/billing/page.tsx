@@ -251,6 +251,7 @@ export default function BillingPage() {
               rowKey="_id"
               pagination={false}
               size="small"
+              scroll={{ x: "max-content" }}
             />
           )}
         </Card>

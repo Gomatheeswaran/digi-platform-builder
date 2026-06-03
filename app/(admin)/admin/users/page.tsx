@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import {
-  Card, Table, Typography, Tag, Button, Input, Space,
+  Card, Table, Typography, Tag, Button, Input,
   Popconfirm, App, Select, Tooltip,
 } from "antd";
 import {
@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
       </div>
 
       <Card className="!rounded-xl !border-slate-100">
-        <Space className="mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           <Input
             placeholder="Search by name or email..."
             prefix={<SearchOutlined />}
@@ -156,10 +156,10 @@ export default function AdminUsersPage() {
             onChange={(e) => setSearch(e.target.value)}
             onPressEnter={() => fetchUsers(1, search)}
             allowClear
-            style={{ width: 300 }}
+            className="flex-1 min-w-[200px] max-w-sm"
           />
           <Button type="primary" onClick={() => fetchUsers(1, search)}>Search</Button>
-        </Space>
+        </div>
 
         <Table
           dataSource={users}
@@ -174,6 +174,7 @@ export default function AdminUsersPage() {
             showTotal: (t) => `${t} users`,
           }}
           size="small"
+          scroll={{ x: "max-content" }}
         />
       </Card>
     </div>

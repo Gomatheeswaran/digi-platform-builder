@@ -114,9 +114,9 @@ export default function AppSettingsPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-3 mb-8">
-        <Link href={`/apps/${id}`}><Button icon={<ArrowLeftOutlined />} type="text" /></Link>
-        <div>
-          <Title level={3} className="!mb-0">{app.name as string} — Settings</Title>
+        <Link href={`/apps/${id}`}><Button icon={<ArrowLeftOutlined />} type="text" className="flex-shrink-0" /></Link>
+        <div className="min-w-0">
+          <Title level={4} className="!mb-0 truncate">{app.name as string} — Settings</Title>
           <Text className="text-slate-400">Configure your app and domain</Text>
         </div>
       </div>
@@ -194,8 +194,8 @@ export default function AppSettingsPage({ params }: { params: Promise<{ id: stri
           </>
         ) : (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <Text strong className="text-lg">{domainName}</Text>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <Text strong className="text-lg break-all">{domainName}</Text>
               <Popconfirm title="Remove this domain?" onConfirm={removeDomain} okButtonProps={{ danger: true }}>
                 <Button danger size="small" icon={<DeleteOutlined />}>Remove</Button>
               </Popconfirm>
@@ -215,7 +215,7 @@ export default function AppSettingsPage({ params }: { params: Promise<{ id: stri
                         { type: "A", name: "@", value: process.env.NEXT_PUBLIC_SERVER_IP || "YOUR_SERVER_IP", desc: "Root domain" },
                         { type: "A", name: "www", value: process.env.NEXT_PUBLIC_SERVER_IP || "YOUR_SERVER_IP", desc: "www subdomain" },
                       ].map((r) => (
-                        <div key={r.name} className="bg-slate-50 rounded p-3 font-mono text-xs flex items-center justify-between">
+                        <div key={r.name} className="bg-slate-50 rounded p-3 font-mono text-xs flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2 break-all">
                           <span>
                             <strong>{r.type}</strong> &nbsp; <strong>{r.name}</strong> &nbsp;→&nbsp; <strong>{r.value}</strong>
                             <span className="text-slate-400 ml-2 font-sans">({r.desc})</span>
@@ -224,6 +224,7 @@ export default function AppSettingsPage({ params }: { params: Promise<{ id: stri
                             type="text"
                             size="small"
                             icon={<CopyOutlined />}
+                            className="flex-shrink-0"
                             onClick={() => navigator.clipboard.writeText(r.value)}
                           />
                         </div>
@@ -270,7 +271,7 @@ export default function AppSettingsPage({ params }: { params: Promise<{ id: stri
         title={<span className="text-red-500">Danger Zone</span>}
         className="!rounded-xl !border-red-100"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-start sm:items-center justify-between gap-3">
           <div>
             <div className="font-medium text-slate-800">Delete App</div>
             <div className="text-sm text-slate-400">Permanently delete this app and all its data.</div>
