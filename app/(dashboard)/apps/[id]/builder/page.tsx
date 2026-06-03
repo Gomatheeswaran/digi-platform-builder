@@ -158,7 +158,7 @@ export default function BuilderPage({ params }: { params: Promise<{ id: string }
       <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
         <Tabs
           items={tabItems}
-          tabPosition={isMobile ? "top" : "left"}
+          tabPlacement={isMobile ? "top" : "start"}
           size="small"
           className="builder-tabs"
           tabBarStyle={isMobile ? undefined : { width: 160, paddingTop: 8, paddingBottom: 8, background: "#fafafa", borderRight: "1px solid #f0f0f0" }}
