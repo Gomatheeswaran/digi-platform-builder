@@ -41,6 +41,13 @@ function formatPrice(amount: number, symbol = "₹") {
   return `${symbol}${amount.toLocaleString("en-IN")}`;
 }
 
+function getFirstImage(images: unknown): string | undefined {
+  if (!images) return undefined;
+  if (Array.isArray(images)) return images[0] as string | undefined;
+  if (typeof images === "string" && images) return images;
+  return undefined;
+}
+
 function ProductGrid({
   appId,
   modelSlug,
@@ -110,9 +117,9 @@ function ProductGrid({
               <Card
                 hoverable
                 cover={
-                  product.images?.[0] ? (
+                  getFirstImage(product.images) ? (
                     <img
-                      src={product.images[0]}
+                      src={getFirstImage(product.images)}
                       alt={product.name}
                       className="h-48 object-cover w-full"
                     />
@@ -201,8 +208,8 @@ function CartDrawer({
         <div className="space-y-4">
           {items.map((item) => (
             <div key={item.product._id} className="flex items-center gap-3 border-b pb-4">
-              {item.product.images?.[0] ? (
-                <img src={item.product.images[0]} alt={item.product.name} className="w-16 h-16 object-cover rounded" />
+              {getFirstImage(item.product.images) ? (
+                <img src={getFirstImage(item.product.images)} alt={item.product.name} className="w-16 h-16 object-cover rounded" />
               ) : (
                 <div className="w-16 h-16 bg-slate-100 rounded flex items-center justify-center text-2xl">🛍️</div>
               )}
@@ -343,7 +350,7 @@ export default function EcommerceRenderer({ app, pathname, config, basePath = ""
                 {cartItems.map((item) => (
                   <Card key={item.product._id} className="mb-4 !rounded-xl">
                     <div className="flex items-center gap-4">
-                      {item.product.images?.[0] && <img src={item.product.images[0]} alt={item.product.name} className="w-20 h-20 object-cover rounded" />}
+                      {getFirstImage(item.product.images) && <img src={getFirstImage(item.product.images)} alt={item.product.name} className="w-20 h-20 object-cover rounded" />}
                       <div className="flex-1"><div className="font-semibold">{item.product.name}</div><div>{formatPrice(item.product.price, currencySymbol)}</div></div>
                       <div className="flex items-center gap-2">
                         <Button size="small" icon={<MinusOutlined />} onClick={() => updateQty(item.product._id, item.qty - 1)} disabled={item.qty <= 1} />

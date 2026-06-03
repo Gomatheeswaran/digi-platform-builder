@@ -3,12 +3,12 @@ import { useEffect, useState, use } from "react";
 import {
   Card, Table, Button, Typography, Tag, Space, Spin, Alert,
   Drawer, Form, Input, InputNumber, Select, Switch, DatePicker,
-  Popconfirm, Empty, Tabs, App,
+  Popconfirm, Empty, Tabs, App, Upload, Tooltip,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined,
-  ArrowLeftOutlined, DatabaseOutlined,
+  ArrowLeftOutlined, DatabaseOutlined, CloudUploadOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import dayjs from "dayjs";
@@ -71,8 +71,34 @@ function FieldFormItem({ field }: { field: FieldConfig }) {
     case "phone":
       input = <Input type="tel" />;
       break;
+    case "image":
+      return (
+        <Form.Item label={field.name}>
+          <div className="space-y-2">
+            <Tooltip title="File upload coming soon">
+              <Upload.Dragger
+                disabled
+                showUploadList={false}
+                style={{ opacity: 0.5, cursor: "not-allowed" }}
+              >
+                <p className="ant-upload-drag-icon">
+                  <CloudUploadOutlined />
+                </p>
+                <p className="ant-upload-text text-sm">Click or drag to upload</p>
+                <p className="ant-upload-hint text-xs">Upload feature coming soon</p>
+              </Upload.Dragger>
+            </Tooltip>
+            <Form.Item name={field.slug} noStyle rules={rules}>
+              <Input placeholder="Or paste image URL: https://example.com/image.jpg" />
+            </Form.Item>
+          </div>
+        </Form.Item>
+      );
+    case "relation":
+      input = <Input />;
+      break;
     case "formula":
-      return null; // formula fields are computed, not input
+      return null; // computed, not editable
     default:
       input = <Input />;
   }
