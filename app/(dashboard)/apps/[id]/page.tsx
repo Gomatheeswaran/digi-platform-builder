@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, use } from "react";
 import {
-  Card, Row, Col, Typography, Button, Tag, Space, Spin,
+  Card, Row, Col, Typography, Button, Tag, Spin,
   Descriptions, Alert,
 } from "antd";
 import {
@@ -45,32 +45,36 @@ export default function AppOverviewPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-4xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/apps"><Button icon={<ArrowLeftOutlined />} type="text" /></Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">{TEMPLATE_ICONS[template] || "📦"}</span>
-            <Title level={3} className="!mb-0">{app.name as string}</Title>
-            <Tag color={STATUS_COLORS[status]} className="capitalize">{status}</Tag>
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-start gap-3 mb-3">
+          <Link href="/apps"><Button icon={<ArrowLeftOutlined />} type="text" className="mt-1 flex-shrink-0" /></Link>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-2xl">{TEMPLATE_ICONS[template] || "📦"}</span>
+              <Title level={4} className="!mb-0 !leading-tight truncate">{app.name as string}</Title>
+              <Tag color={STATUS_COLORS[status]} className="capitalize">{status}</Tag>
+            </div>
+            <Text className="text-slate-400 text-sm">/{app.slug as string}</Text>
           </div>
-          <Text className="text-slate-400">/{app.slug as string}</Text>
         </div>
-        <Space>
+        <div className="flex flex-wrap gap-2 pl-10">
           <Link href={`/preview/${id}`} target="_blank">
-            <Button icon={<EyeOutlined />}>Preview</Button>
+            <Button icon={<EyeOutlined />} size="small">Preview</Button>
           </Link>
           <Link href={`/apps/${id}/builder`}>
-            <Button type="primary" icon={<EditOutlined />}>Open Builder</Button>
+            <Button type="primary" icon={<EditOutlined />} size="small">Open Builder</Button>
           </Link>
           {customDomain && domainVerified && (
             <Button
               icon={<ExportOutlined />}
+              size="small"
               onClick={() => window.open(`https://${customDomain}`, "_blank")}
             >
               Visit Live
             </Button>
           )}
-        </Space>
+        </div>
       </div>
 
       <Row gutter={[16, 16]} className="mb-6">
