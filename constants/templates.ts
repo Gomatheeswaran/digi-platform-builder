@@ -20,11 +20,6 @@ const defaultSEO: AppConfig["seo"] = {
   ogImage: "",
 };
 
-const defaultNav: AppConfig["navigation"] = {
-  items: [],
-  showAuthButtons: true,
-  cartEnabled: false,
-};
 
 export const TEMPLATES: TemplateDef[] = [
   // ─── E-Commerce ────────────────────────────────────────────────
@@ -117,13 +112,32 @@ export const TEMPLATES: TemplateDef[] = [
           name: "Orders",
           slug: "orders",
           fields: [
-            { id: "items", name: "Items", slug: "items", type: "text", required: true },
-            { id: "amount", name: "Amount", slug: "amount", type: "currency", required: true },
             { id: "status", name: "Status", slug: "status", type: "select", required: true, options: ["pending", "paid", "shipped", "delivered", "cancelled"] },
+            { id: "amount", name: "Amount", slug: "amount", type: "currency", required: true },
             { id: "customerName", name: "Customer Name", slug: "customerName", type: "text", required: false },
             { id: "customerEmail", name: "Customer Email", slug: "customerEmail", type: "email", required: false },
+            { id: "customerPhone", name: "Phone", slug: "customerPhone", type: "phone", required: false },
+            { id: "address", name: "Address", slug: "address", type: "textarea", required: false },
+            { id: "city", name: "City", slug: "city", type: "text", required: false },
+            { id: "state", name: "State", slug: "state", type: "text", required: false },
+            { id: "pincode", name: "Pincode", slug: "pincode", type: "text", required: false },
+            { id: "items", name: "Items", slug: "items", type: "textarea", required: false },
+            { id: "razorpayOrderId", name: "Razorpay Order ID", slug: "razorpayOrderId", type: "text", required: false },
+            { id: "razorpayPaymentId", name: "Payment ID", slug: "razorpayPaymentId", type: "text", required: false },
           ],
           allowCreate: false, allowEdit: true, allowDelete: false,
+        },
+        {
+          id: "customers",
+          name: "Customers",
+          slug: "customers",
+          fields: [
+            { id: "name", name: "Name", slug: "name", type: "text", required: true },
+            { id: "email", name: "Email", slug: "email", type: "email", required: true },
+            { id: "phone", name: "Phone", slug: "phone", type: "phone", required: false },
+            { id: "createdAt", name: "Registered At", slug: "createdAt", type: "datetime", required: false },
+          ],
+          allowCreate: false, allowEdit: false, allowDelete: false,
         },
       ],
       integrations: {

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/db";
 import { requireAuth, badRequest } from "@/lib/api-helpers";
 import { slugify, isValidSlug } from "@/lib/validators";
@@ -56,6 +55,17 @@ export async function POST(req: NextRequest) {
   }
 
   const db = await getDb();
+
+  // Enforce free-tier 3-app limit
+  if (auth.user.role !== "super_admin") {
+    const existing = await db.collection("apps").countDocuments({ userId: auth.user._id });
+    if (existing >= 3) {
+      return NextResponse.json(
+        { error: "Free tier is limited to 3 applications. Please upgrade your plan to create more." },
+        { status: 403 }
+      );
+    }
+  }
 
   // Ensure slug is globally unique
   const slugExists = await db.collection("apps").findOne({ slug });

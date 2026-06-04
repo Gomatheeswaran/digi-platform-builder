@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { getDb } from "@/lib/db";
 import { signToken, cookieOptions } from "@/lib/auth";
-import { isGmail } from "@/lib/validators";
 import type { PlatformUser } from "@/types";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
-    if (!email || !isGmail(email)) {
-      return NextResponse.json({ error: "Only Gmail accounts are allowed." }, { status: 400 });
+    if (!email?.trim()) {
+      return NextResponse.json({ error: "Email is required." }, { status: 400 });
     }
     if (!password) {
       return NextResponse.json({ error: "Password is required." }, { status: 400 });
@@ -29,6 +28,16 @@ export async function POST(req: NextRequest) {
     if (!passwordMatch) {
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
+
+    if (user.suspended) {
+      return NextResponse.json({ error: "Account suspended. Contact support." }, { status: 403 });
+    }
+
+    // Track last login time
+    await db.collection("platform_users").updateOne(
+      { _id: user._id },
+      { $set: { lastLoginAt: new Date() } }
+    );
 
     const token = signToken({ userId: user._id.toString(), role: user.role });
     const opts = cookieOptions(token);

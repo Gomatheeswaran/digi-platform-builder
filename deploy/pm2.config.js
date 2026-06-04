@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: "app-platform",
-      script: "node_modules/.bin/next",
-      args: "start",
+      script: "node_modules/.bin/tsx",
+      args: "proxy.ts",
       cwd: "/var/www/app-platform",
       instances: "max", // use all CPU cores
       exec_mode: "cluster",

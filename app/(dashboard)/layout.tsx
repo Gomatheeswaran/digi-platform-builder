@@ -5,6 +5,7 @@ import {
   AppstoreOutlined, GlobalOutlined, CreditCardOutlined, SettingOutlined,
   LogoutOutlined, UserOutlined, DashboardOutlined,
   MenuFoldOutlined, MenuUnfoldOutlined, PlusOutlined, MenuOutlined,
+  CustomerServiceOutlined, BellOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,16 +25,18 @@ const NAV_ITEMS = [
   { key: "/apps", label: "My Apps", icon: <AppstoreOutlined /> },
   { key: "/domains", label: "Domains", icon: <GlobalOutlined /> },
   { key: "/billing", label: "Billing", icon: <CreditCardOutlined /> },
+  { key: "/support", label: "Support", icon: <CustomerServiceOutlined /> },
   { key: "/settings", label: "Settings", icon: <SettingOutlined /> },
 ];
 
 function SidebarContent({
-  user, selectedKey, collapsed, onClose,
+  user, selectedKey, collapsed, onClose, unreadSupport,
 }: {
   user: User | null;
   selectedKey: string;
   collapsed: boolean;
   onClose?: () => void;
+  unreadSupport: number;
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -68,8 +71,15 @@ function SidebarContent({
           className="!bg-slate-900 !border-0 mt-2"
           items={NAV_ITEMS.map((item) => ({
             key: item.key,
-            icon: item.icon,
-            label: <Link href={item.key} onClick={onClose}>{item.label}</Link>,
+            icon: item.key === "/support" && unreadSupport > 0
+              ? <Badge count={unreadSupport} size="small" offset={[4, -2]}>{item.icon}</Badge>
+              : item.icon,
+            label: (
+              <Link href={item.key} onClick={onClose}>
+                {item.label}
+                {item.key === "/support" && unreadSupport > 0 && collapsed && null}
+              </Link>
+            ),
           }))}
         />
       </div>
@@ -109,6 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [unreadSupport, setUnreadSupport] = useState(0);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -129,6 +140,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       })
       .catch(() => router.push("/login"));
   }, [router]);
+
+  useEffect(() => {
+    const poll = () =>
+      fetch("/api/support/unread")
+        .then((r) => r.json())
+        .then((d) => setUnreadSupport(d.unread ?? 0))
+        .catch(() => {});
+    poll();
+    const id = setInterval(poll, 10000);
+    return () => clearInterval(id);
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -155,7 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className="!bg-slate-900"
           style={{ boxShadow: "2px 0 8px rgba(0,0,0,.1)" }}
         >
-          <SidebarContent user={user} selectedKey={selectedKey} collapsed={collapsed} />
+          <SidebarContent user={user} selectedKey={selectedKey} collapsed={collapsed} unreadSupport={unreadSupport} />
         </Sider>
       )}
 
@@ -177,6 +199,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             selectedKey={selectedKey}
             collapsed={false}
             onClose={() => setMobileOpen(false)}
+            unreadSupport={unreadSupport}
           />
         </Drawer>
       )}
@@ -193,29 +216,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }
           </button>
 
-          {user && (
-            <Dropdown menu={{ items: userMenuItems }} trigger={["click"]} placement="bottomRight">
-              <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-1.5 transition-colors">
-                <div className="text-right hidden sm:block">
-                  <div className="text-sm font-medium text-slate-700 leading-tight">{user.name}</div>
-                  <div className="text-xs text-slate-400 truncate max-w-[140px]">{user.email}</div>
+          <div className="flex items-center gap-2">
+            <Link href="/support">
+              <Badge count={unreadSupport} size="small">
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors">
+                  <BellOutlined className="text-base" />
+                </button>
+              </Badge>
+            </Link>
+
+            {user && (
+              <Dropdown menu={{ items: userMenuItems }} trigger={["click"]} placement="bottomRight">
+                <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-1.5 transition-colors">
+                  <div className="text-right hidden sm:block">
+                    <div className="text-sm font-medium text-slate-700 leading-tight">{user.name}</div>
+                    <div className="text-xs text-slate-400 truncate max-w-[140px]">{user.email}</div>
+                  </div>
+                  <Avatar
+                    size={32}
+                    style={{ backgroundColor: "#1677ff" }}
+                    icon={<UserOutlined />}
+                  />
+                  <Badge
+                    count={user.plan === "free" ? "Free" : "Pro"}
+                    style={{
+                      backgroundColor: user.plan === "free" ? "#f0f0f0" : "#1677ff",
+                      color: user.plan === "free" ? "#666" : "#fff",
+                      fontSize: 10,
+                    }}
+                  />
                 </div>
-                <Avatar
-                  size={32}
-                  style={{ backgroundColor: "#1677ff" }}
-                  icon={<UserOutlined />}
-                />
-                <Badge
-                  count={user.plan === "free" ? "Free" : "Pro"}
-                  style={{
-                    backgroundColor: user.plan === "free" ? "#f0f0f0" : "#1677ff",
-                    color: user.plan === "free" ? "#666" : "#fff",
-                    fontSize: 10,
-                  }}
-                />
-              </div>
-            </Dropdown>
-          )}
+              </Dropdown>
+            )}
+          </div>
         </Header>
 
         <Content className="p-3 sm:p-4 md:p-6 bg-slate-50 min-h-[calc(100vh-56px)] md:min-h-[calc(100vh-64px)]">

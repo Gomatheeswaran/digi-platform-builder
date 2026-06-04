@@ -37,7 +37,7 @@ function LoginForm() {
           <Title level={2} className="!mb-1 !text-slate-800 !text-2xl sm:!text-3xl">
             Welcome back
           </Title>
-          <Text className="text-slate-400 text-sm">Sign in with your Gmail account</Text>
+          <Text className="text-slate-400 text-sm">Sign in to your account</Text>
         </div>
 
         {error && (
@@ -51,17 +51,39 @@ function LoginForm() {
 
         <Form layout="vertical" onFinish={handleLogin}>
           <Form.Item
-            name="email" label="Gmail Address"
+            name="email"
+            label="Email Address"
             rules={[
               { required: true, message: "Email is required" },
-              { pattern: /^[a-zA-Z0-9._%+-]+@gmail\.com$/, message: "Must be a @gmail.com address" },
+              { type: "email", message: "Enter a valid email address" },
             ]}
           >
-            <Input prefix={<MailOutlined className="text-slate-400" />} placeholder="yourname@gmail.com" size="large" autoComplete="email" />
+            <Input
+              prefix={<MailOutlined className="text-slate-400" />}
+              placeholder="you@example.com"
+              size="large"
+              autoComplete="email"
+            />
           </Form.Item>
 
-          <Form.Item name="password" label="Password" rules={[{ required: true, message: "Password is required" }]}>
-            <Input.Password prefix={<LockOutlined className="text-slate-400" />} placeholder="Your password" size="large" autoComplete="current-password" />
+          <Form.Item
+            name="password"
+            label={
+              <div className="flex justify-between w-full">
+                <span>Password</span>
+                <Link href="/forgot-password" className="text-blue-500 text-xs font-normal">
+                  Forgot password?
+                </Link>
+              </div>
+            }
+            rules={[{ required: true, message: "Password is required" }]}
+          >
+            <Input.Password
+              prefix={<LockOutlined className="text-slate-400" />}
+              placeholder="Your password"
+              size="large"
+              autoComplete="current-password"
+            />
           </Form.Item>
 
           <Button type="primary" htmlType="submit" size="large" block loading={loading} className="mt-2">

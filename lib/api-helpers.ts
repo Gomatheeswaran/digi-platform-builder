@@ -38,5 +38,8 @@ export async function requireAuth(
     .findOne({ _id: new ObjectId(payload.userId) });
 
   if (!user) return unauthorized();
+  if (user.suspended) {
+    return NextResponse.json({ error: "Account suspended. Contact support." }, { status: 403 });
+  }
   return { user };
 }

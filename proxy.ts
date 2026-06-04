@@ -1,91 +1,109 @@
-import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+/**
+ * Custom Next.js server — replaces next/dist middleware (Edge runtime).
+ * Runs as a standard Node.js HTTP server so it can use any Node.js API.
+ *
+ * Usage:
+ *   dev   → next dev     (unchanged, proxy only needed in production)
+ *   start → tsx proxy.ts (or: node proxy.js after tsc build)
+ */
+import { createServer, IncomingMessage, ServerResponse } from "http";
+import { parse } from "url";
+import next from "next";
+import jwt from "jsonwebtoken";
 
-const PLATFORM_HOST = process.env.PLATFORM_HOST || "localhost:3000";
-const COOKIE_NAME = "ap_token";
+const dev = process.env.NODE_ENV !== "production";
+const hostname = "0.0.0.0";
+const port = parseInt(process.env.PORT || "3000", 10);
 
-function applyCors(res: NextResponse, origin: string | null): NextResponse {
-  const allow = origin ?? "*";
-  res.headers.set("Access-Control-Allow-Origin", allow);
-  res.headers.set("Access-Control-Allow-Credentials", "true");
-  res.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res;
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+
+// ── Public paths: no JWT required ────────────────────────────────────────────
+const PUBLIC_PREFIXES = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/send-otp",
+  "/api/auth/verify-otp",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/templates",
+  "/api/tenant",
+  "/api/billing/webhook",
+  "/api/setup/seed-admin",
+];
+
+// Tenant-facing storefront / checkout / customer auth — use their own JWT, not platform JWT
+const TENANT_ROUTE = /^\/api\/apps\/[^/]+\/(checkout|customers|storefront)(\/|$)/;
+
+function isPublic(pathname: string): boolean {
+  if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return true;
+  if (TENANT_ROUTE.test(pathname)) return true;
+  return false;
 }
 
-// Protected dashboard routes — require login
-const PROTECTED_PATHS = ["/dashboard", "/apps", "/domains", "/billing", "/settings", "/admin"];
-const AUTH_PATHS = ["/login", "/register"];
+// ── JWT helpers ───────────────────────────────────────────────────────────────
+function parseCookies(header?: string): Record<string, string> {
+  if (!header) return {};
+  return Object.fromEntries(
+    header.split(";").map((c) => {
+      const [k, ...v] = c.trim().split("=");
+      return [k.trim(), decodeURIComponent(v.join("="))];
+    })
+  );
+}
 
-async function isValidToken(token: string): Promise<boolean> {
+function extractToken(req: IncomingMessage): string | null {
+  const cookies = parseCookies(req.headers.cookie);
+  if (cookies.ap_token) return cookies.ap_token;
+  const auth = req.headers.authorization;
+  if (auth?.toLowerCase().startsWith("bearer ")) return auth.slice(7);
+  return null;
+}
+
+function verifyPlatformJwt(token: string): boolean {
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-    await jwtVerify(token, secret);
+    jwt.verify(token, process.env.JWT_SECRET || "default-secret");
     return true;
   } catch {
     return false;
   }
 }
 
-export async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const host = req.headers.get("host") || "";
-  const origin = req.headers.get("origin");
-
-  // ─── CORS Preflight ───────────────────────────────────────────
-  if (req.method === "OPTIONS" && pathname.startsWith("/api/")) {
-    return applyCors(new NextResponse(null, { status: 204 }), origin);
-  }
-
-  // ─── Tenant App Routing ───────────────────────────────────────
-  // If the request comes in on a custom domain (not the platform), serve the tenant app
-  const hostname = host.split(":")[0];
-  const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
-  const isPlatformHost =
-    isIp ||
-    host === PLATFORM_HOST ||
-    host === `www.${PLATFORM_HOST}` ||
-    host.includes("localhost") ||
-    host.includes("127.0.0.1");
-
-  if (!isPlatformHost && !pathname.startsWith("/api/")) {
-    const url = req.nextUrl.clone();
-    const tenantPath = pathname === "/" ? "/_tenant" : `/_tenant${pathname}`;
-    url.pathname = tenantPath;
-    url.searchParams.set("__host", host);
-    return NextResponse.rewrite(url);
-  }
-
-  // ─── Auth Guard (platform dashboard) ─────────────────────────
-  const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
-  const isAuthPath = AUTH_PATHS.some((p) => pathname.startsWith(p));
-
-  const token =
-    req.cookies.get(COOKIE_NAME)?.value ||
-    req.headers.get("authorization")?.replace("Bearer ", "");
-
-  const loggedIn = token ? await isValidToken(token) : false;
-
-  if (isProtected && !loggedIn) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  if (isAuthPath && loggedIn) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  const res = NextResponse.next();
-  if (pathname.startsWith("/api/") && origin) {
-    applyCors(res, origin);
-  }
-  return res;
+// ── Response helpers ──────────────────────────────────────────────────────────
+function json(res: ServerResponse, status: number, body: object) {
+  const payload = JSON.stringify(body);
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+    "Content-Length": Buffer.byteLength(payload),
+  });
+  res.end(payload);
 }
 
-export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons|images|fonts).*)",
-  ],
-};
+// ── Server ────────────────────────────────────────────────────────────────────
+app.prepare().then(() => {
+  createServer(async (req: IncomingMessage, res: ServerResponse) => {
+    try {
+      const parsedUrl = parse(req.url!, true);
+      const pathname = parsedUrl.pathname || "/";
+
+      // Guard API routes
+      if (pathname.startsWith("/api/") && !isPublic(pathname)) {
+        const token = extractToken(req);
+        if (!token || !verifyPlatformJwt(token)) {
+          json(res, 401, { error: "Unauthorized" });
+          return;
+        }
+      }
+
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error("[proxy] unhandled error:", err);
+      if (!res.headersSent) {
+        res.writeHead(500);
+        res.end("Internal Server Error");
+      }
+    }
+  }).listen(port, hostname, () => {
+    console.log(`> Custom server ready on http://localhost:${port} [${dev ? "development" : "production"}]`);
+  });
+});

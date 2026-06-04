@@ -22,7 +22,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   if (body.role !== undefined) {
     if (!["super_admin", "tenant_admin"].includes(body.role)) return badRequest("Invalid role.");
-    // Prevent self-demotion
     if (String(auth.user._id) === id && body.role !== "super_admin") {
       return badRequest("Cannot demote your own super admin account.");
     }
@@ -36,6 +35,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (body.plan !== undefined) {
     if (!["free", "starter", "pro"].includes(body.plan)) return badRequest("Invalid plan.");
     update.plan = body.plan;
+  }
+
+  if (body.suspended !== undefined) {
+    if (String(auth.user._id) === id) return badRequest("Cannot suspend your own account.");
+    update.suspended = Boolean(body.suspended);
   }
 
   const result = await db.collection("platform_users").updateOne(

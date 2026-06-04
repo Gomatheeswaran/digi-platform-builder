@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Layout, Menu, Typography, Avatar, Dropdown, Drawer } from "antd";
+import { Layout, Menu, Typography, Avatar, Dropdown, Drawer, Badge } from "antd";
 import {
   DashboardOutlined, TeamOutlined, AppstoreOutlined,
   GlobalOutlined, SettingOutlined, LogoutOutlined,
-  UserOutlined, SafetyCertificateOutlined, MenuOutlined,
+  UserOutlined, SafetyCertificateOutlined, MenuOutlined, CreditCardOutlined,
+  CustomerServiceOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -18,6 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadSupport, setUnreadSupport] = useState(0);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -38,11 +40,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => router.push("/login"));
   }, [router]);
 
+  useEffect(() => {
+    const poll = () =>
+      fetch("/api/support/unread")
+        .then((r) => r.json())
+        .then((d) => setUnreadSupport(d.unread ?? 0))
+        .catch(() => {});
+    poll();
+    const id = setInterval(poll, 10000);
+    return () => clearInterval(id);
+  }, []);
+
   const navItems = [
     { key: "/admin", label: "Overview", icon: <DashboardOutlined /> },
-    { key: "/admin/users", label: "Users", icon: <TeamOutlined /> },
+    { key: "/admin/tenants", label: "Tenants", icon: <TeamOutlined /> },
+    { key: "/admin/users", label: "All Users", icon: <UserOutlined /> },
     { key: "/admin/apps", label: "All Apps", icon: <AppstoreOutlined /> },
     { key: "/admin/domains", label: "Domains", icon: <GlobalOutlined /> },
+    { key: "/admin/payments", label: "Transactions", icon: <CreditCardOutlined /> },
+    { key: "/admin/support", label: "Support", icon: <CustomerServiceOutlined /> },
     { key: "/admin/settings", label: "Settings", icon: <SettingOutlined /> },
   ];
 
@@ -55,8 +71,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const menuItems = navItems.map((item) => ({
     key: item.key,
-    icon: item.icon,
-    label: <Link href={item.key} onClick={() => setMobileOpen(false)}>{item.label}</Link>,
+    icon: item.key === "/admin/support" && unreadSupport > 0
+      ? <Badge count={unreadSupport} size="small" offset={[4, -2]}>{item.icon}</Badge>
+      : item.icon,
+    label: (
+      <Link href={item.key} onClick={() => setMobileOpen(false)}>
+        {item.label}
+      </Link>
+    ),
   }));
 
   const sidebarContent = (

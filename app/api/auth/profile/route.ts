@@ -24,6 +24,19 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ message: "Profile updated." });
   }
 
+  // Update recovery email
+  if (body.recoveryEmail !== undefined) {
+    const recoveryEmail = (body.recoveryEmail || "").trim().toLowerCase();
+    if (recoveryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recoveryEmail)) {
+      return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    }
+    await db.collection("platform_users").updateOne(
+      { _id: auth.user._id },
+      { $set: { recoveryEmail: recoveryEmail || null, updatedAt: new Date() } }
+    );
+    return NextResponse.json({ message: "Recovery email updated." });
+  }
+
   // Change password
   if (body.currentPassword !== undefined) {
     const { currentPassword, newPassword } = body as { currentPassword: string; newPassword: string };

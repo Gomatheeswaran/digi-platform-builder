@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import {
   Card, Row, Col, Button, Typography, Tag, Input, Select,
-  Empty, Spin, Badge, Drawer, App as AntApp,
+  Empty, Spin, Badge, Drawer, App as AntApp, Form, Tabs, Dropdown,
 } from "antd";
 import {
   ShoppingCartOutlined, SearchOutlined,
-  MinusOutlined, PlusOutlined, DeleteOutlined,
+  MinusOutlined, PlusOutlined, DeleteOutlined, CheckCircleOutlined,
+  UserOutlined, LogoutOutlined,
 } from "@ant-design/icons";
 import type { AppConfig, AppTemplate } from "@/types";
 import AppFooter from "../AppFooter";
@@ -37,6 +38,13 @@ interface CartItem {
   qty: number;
 }
 
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+}
+
 function formatPrice(amount: number, symbol = "₹") {
   return `${symbol}${amount.toLocaleString("en-IN")}`;
 }
@@ -47,6 +55,149 @@ function getFirstImage(images: unknown): string | undefined {
   if (typeof images === "string" && images) return images;
   return undefined;
 }
+
+function customerStorageKey(appId: string) {
+  return `ec_${appId}_session`;
+}
+
+function loadStoredSession(appId: string): { token: string; customer: Customer } | null {
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem(customerStorageKey(appId)) : null;
+    return raw ? (JSON.parse(raw) as { token: string; customer: Customer }) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(appId: string, token: string, customer: Customer) {
+  localStorage.setItem(customerStorageKey(appId), JSON.stringify({ token, customer }));
+}
+
+function clearSession(appId: string) {
+  localStorage.removeItem(customerStorageKey(appId));
+}
+
+// ── Customer Auth Drawer ─────────────────────────────────────────────────────
+
+function CustomerAuthDrawer({
+  open, onClose, appId, primaryColor, onAuth,
+}: {
+  open: boolean;
+  onClose: () => void;
+  appId: string;
+  primaryColor: string;
+  onAuth: (customer: Customer, token: string) => void;
+}) {
+  const { message } = AntApp.useApp();
+  const [tab, setTab] = useState<"login" | "register">("login");
+  const [loginForm] = Form.useForm();
+  const [regForm] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    try {
+      const values = await loginForm.validateFields();
+      setLoading(true);
+      const res = await fetch(`/api/apps/${appId}/customers/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed");
+      onAuth(data.customer, data.token);
+      loginForm.resetFields();
+      onClose();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister() {
+    try {
+      const values = await regForm.validateFields();
+      setLoading(true);
+      const res = await fetch(`/api/apps/${appId}/customers/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Registration failed");
+      message.success("Account created! Please log in.");
+      loginForm.setFieldValue("email", values.email);
+      regForm.resetFields();
+      setTab("login");
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Drawer title={tab === "login" ? "Login" : "Create Account"} placement="right" open={open} onClose={onClose} styles={{ wrapper: { width: "min(380px, 100vw)" } }}>
+      <Tabs
+        activeKey={tab}
+        onChange={(k) => setTab(k as "login" | "register")}
+        items={[
+          {
+            key: "login",
+            label: "Login",
+            children: (
+              <Form form={loginForm} layout="vertical">
+                <Form.Item name="email" label="Email" rules={[{ required: true, type: "email", message: "Valid email required" }]}>
+                  <Input type="email" placeholder="you@example.com" />
+                </Form.Item>
+                <Form.Item name="password" label="Password" rules={[{ required: true, message: "Required" }]}>
+                  <Input.Password placeholder="••••••••" />
+                </Form.Item>
+                <Button type="primary" block size="large" loading={loading} onClick={handleLogin} style={{ background: primaryColor }}>
+                  Login
+                </Button>
+                <div className="text-center mt-4 text-sm text-slate-500">
+                  New here?{" "}
+                  <Button type="link" className="!p-0" onClick={() => setTab("register")}>Create an account</Button>
+                </div>
+              </Form>
+            ),
+          },
+          {
+            key: "register",
+            label: "Register",
+            children: (
+              <Form form={regForm} layout="vertical">
+                <Form.Item name="name" label="Full Name" rules={[{ required: true, message: "Required" }]}>
+                  <Input placeholder="John Doe" />
+                </Form.Item>
+                <Form.Item name="email" label="Email" rules={[{ required: true, type: "email", message: "Valid email required" }]}>
+                  <Input type="email" placeholder="you@example.com" />
+                </Form.Item>
+                <Form.Item name="phone" label="Phone">
+                  <Input type="tel" placeholder="+91 98765 43210" />
+                </Form.Item>
+                <Form.Item name="password" label="Password" rules={[{ required: true, min: 6, message: "At least 6 characters" }]}>
+                  <Input.Password placeholder="••••••••" />
+                </Form.Item>
+                <Button type="primary" block size="large" loading={loading} onClick={handleRegister} style={{ background: primaryColor }}>
+                  Create Account
+                </Button>
+                <div className="text-center mt-4 text-sm text-slate-500">
+                  Already have an account?{" "}
+                  <Button type="link" className="!p-0" onClick={() => setTab("login")}>Login</Button>
+                </div>
+              </Form>
+            ),
+          },
+        ]}
+      />
+    </Drawer>
+  );
+}
+
+// ── Product Grid ─────────────────────────────────────────────────────────────
 
 function ProductGrid({
   appId,
@@ -66,7 +217,7 @@ function ProductGrid({
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(`/api/apps/${appId}/data?model=${modelSlug}&limit=100`)
+    fetch(`/api/apps/${appId}/storefront?model=${modelSlug}&limit=100`)
       .then((r) => r.json())
       .then((data) => {
         const list: Product[] = (data.records || []).filter((p: Product) => p.isActive !== false);
@@ -75,7 +226,7 @@ function ProductGrid({
         setCategories(cats);
       })
       .finally(() => setLoading(false));
-  }, [appId]);
+  }, [appId, modelSlug]);
 
   const filtered = products.filter((p) => {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
@@ -166,13 +317,176 @@ function ProductGrid({
   );
 }
 
+// ── Checkout Drawer ──────────────────────────────────────────────────────────
+
+function CheckoutDrawer({
+  open, onClose, items, currencySymbol, appId, appName, razorpayEnabled, customer, onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  items: CartItem[];
+  currencySymbol: string;
+  appId: string;
+  appName: string;
+  razorpayEnabled: boolean;
+  customer: Customer | null;
+  onSuccess: (orderId: string, amount: number) => void;
+}) {
+  const { message } = AntApp.useApp();
+  const [form] = Form.useForm();
+  const [paying, setPaying] = useState(false);
+  const total = items.reduce((sum, i) => sum + i.product.price * i.qty, 0);
+
+  // Pre-fill delivery details from logged-in customer
+  useEffect(() => {
+    if (open && customer) {
+      form.setFieldsValue({
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone || "",
+      });
+    }
+  }, [open, customer, form]);
+
+  async function handlePay() {
+    try {
+      const values = await form.validateFields();
+      setPaying(true);
+
+      const customerDetails = {
+        customerName: values.customerName,
+        customerEmail: values.customerEmail,
+        customerPhone: values.customerPhone,
+        address: values.address,
+        city: values.city,
+        state: values.state,
+        pincode: values.pincode,
+      };
+      const orderItems = items.map((i) => ({ name: i.product.name, qty: i.qty, price: i.product.price }));
+
+      if (razorpayEnabled) {
+        const res = await fetch(`/api/apps/${appId}/checkout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: total, ...customerDetails }),
+        });
+        if (!res.ok) throw new Error((await res.json()).error || "Payment initiation failed");
+
+        const { orderId: rzpOrderId, amount: rzpAmount, currency, keyId, appName: name } = await res.json();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rzp = new (window as any).Razorpay({
+          key: keyId,
+          amount: rzpAmount,
+          currency,
+          order_id: rzpOrderId,
+          name: name || appName,
+          prefill: { name: values.customerName, email: values.customerEmail, contact: values.customerPhone },
+          theme: { color: "#d4380d" },
+          handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+            const verifyRes = await fetch(`/api/apps/${appId}/checkout/verify`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                customerDetails, items: orderItems, amount: total, paymentMethod: "razorpay",
+              }),
+            });
+            if (verifyRes.ok) {
+              const data = await verifyRes.json();
+              onSuccess(data.orderId, total);
+            } else {
+              message.error("Payment verification failed. Please contact support.");
+            }
+            setPaying(false);
+          },
+          modal: { ondismiss: () => setPaying(false) },
+        });
+        rzp.open();
+      } else {
+        const res = await fetch(`/api/apps/${appId}/checkout/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customerDetails, items: orderItems, amount: total, paymentMethod: "cod" }),
+        });
+        if (!res.ok) throw new Error("Failed to place order");
+        const data = await res.json();
+        onSuccess(data.orderId, total);
+        setPaying(false);
+      }
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Something went wrong");
+      setPaying(false);
+    }
+  }
+
+  return (
+    <Drawer
+      title="Checkout"
+      placement="right"
+      open={open}
+      onClose={onClose}
+      styles={{ wrapper: { width: "min(480px, 100vw)" } }}
+      footer={
+        <div>
+          <div className="flex justify-between mb-3">
+            <Text strong>Total</Text>
+            <Text strong className="text-xl">{formatPrice(total, currencySymbol)}</Text>
+          </div>
+          <Button type="primary" block size="large" loading={paying} onClick={handlePay}>
+            {razorpayEnabled ? `Pay ${formatPrice(total, currencySymbol)}` : "Place Order (Cash on Delivery)"}
+          </Button>
+        </div>
+      }
+    >
+      <div className="bg-slate-50 rounded-lg p-3 mb-5">
+        <Text className="text-xs text-slate-500 uppercase tracking-wide block mb-2">Order Summary</Text>
+        {items.map((item) => (
+          <div key={item.product._id} className="flex justify-between text-sm py-1">
+            <span className="text-slate-700">{item.product.name} <span className="text-slate-400">× {item.qty}</span></span>
+            <span className="font-medium">{formatPrice(item.product.price * item.qty, currencySymbol)}</span>
+          </div>
+        ))}
+      </div>
+
+      <Text className="text-xs text-slate-500 uppercase tracking-wide block mb-3">Delivery Details</Text>
+      <Form form={form} layout="vertical">
+        <Form.Item name="customerName" label="Full Name" rules={[{ required: true, message: "Required" }]}>
+          <Input placeholder="John Doe" />
+        </Form.Item>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3">
+          <Form.Item name="customerEmail" label="Email" rules={[{ required: true, type: "email", message: "Valid email required" }]}>
+            <Input type="email" placeholder="john@example.com" />
+          </Form.Item>
+          <Form.Item name="customerPhone" label="Phone" rules={[{ required: true, message: "Required" }]}>
+            <Input type="tel" placeholder="+91 98765 43210" />
+          </Form.Item>
+        </div>
+        <Form.Item name="address" label="Street Address" rules={[{ required: true, message: "Required" }]}>
+          <Input.TextArea rows={2} placeholder="House no., Street, Landmark" />
+        </Form.Item>
+        <div className="grid grid-cols-2 gap-x-3">
+          <Form.Item name="city" label="City" rules={[{ required: true, message: "Required" }]}>
+            <Input placeholder="Chennai" />
+          </Form.Item>
+          <Form.Item name="state" label="State" rules={[{ required: true, message: "Required" }]}>
+            <Input placeholder="Tamil Nadu" />
+          </Form.Item>
+        </div>
+        <Form.Item name="pincode" label="Pincode" rules={[{ required: true, message: "Required" }]}>
+          <Input maxLength={6} placeholder="600001" className="max-w-[140px]" />
+        </Form.Item>
+      </Form>
+    </Drawer>
+  );
+}
+
+// ── Cart Drawer ──────────────────────────────────────────────────────────────
+
 function CartDrawer({
-  open,
-  onClose,
-  items,
-  onUpdateQty,
-  onRemove,
-  currencySymbol,
+  open, onClose, items, onUpdateQty, onRemove, currencySymbol, onCheckout,
 }: {
   open: boolean;
   onClose: () => void;
@@ -180,6 +494,7 @@ function CartDrawer({
   onUpdateQty: (productId: string, qty: number) => void;
   onRemove: (productId: string) => void;
   currencySymbol: string;
+  onCheckout: () => void;
 }) {
   const total = items.reduce((sum, item) => sum + item.product.price * item.qty, 0);
 
@@ -189,7 +504,7 @@ function CartDrawer({
       placement="right"
       onClose={onClose}
       open={open}
-      width={400}
+      styles={{ wrapper: { width: "min(400px, 100vw)" } }}
       footer={
         items.length > 0 && (
           <div>
@@ -197,7 +512,7 @@ function CartDrawer({
               <Text strong>Total</Text>
               <Text strong className="text-xl">{formatPrice(total, currencySymbol)}</Text>
             </div>
-            <Button type="primary" block size="large">Proceed to Checkout</Button>
+            <Button type="primary" block size="large" onClick={() => { onClose(); onCheckout(); }}>Proceed to Checkout</Button>
           </div>
         )
       }
@@ -234,14 +549,49 @@ function CartDrawer({
   );
 }
 
+// ── Main Renderer ─────────────────────────────────────────────────────────────
+
 export default function EcommerceRenderer({ app, pathname, config, basePath = "" }: Props) {
   const { message } = AntApp.useApp();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<{ orderId: string; amount: number } | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
 
   const currencySymbol = (config.settings?.currencySymbol as string) || "₹";
   const productsModel = config.dataModels.find((m) => m.slug === "products") ?? config.dataModels[0];
   const productsModelSlug = productsModel?.slug ?? "products";
+  const razorpayEnabled = !!(config.integrations?.razorpay?.enabled && config.integrations.razorpay.keyId);
+
+  // Restore customer session from localStorage
+  useEffect(() => {
+    const stored = loadStoredSession(app.id);
+    if (stored) setCustomer(stored.customer);
+  }, [app.id]);
+
+  // Load Razorpay checkout script when payment is enabled
+  useEffect(() => {
+    if (!razorpayEnabled) return;
+    if (document.getElementById("rzp-script")) return;
+    const s = document.createElement("script");
+    s.id = "rzp-script";
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    document.body.appendChild(s);
+  }, [razorpayEnabled]);
+
+  function handleAuth(newCustomer: Customer, token: string) {
+    saveSession(app.id, token, newCustomer);
+    setCustomer(newCustomer);
+    message.success(`Welcome, ${newCustomer.name}!`);
+  }
+
+  function handleLogout() {
+    clearSession(app.id);
+    setCustomer(null);
+    message.success("Logged out");
+  }
 
   function addToCart(product: Product) {
     setCartItems((prev) => {
@@ -260,7 +610,6 @@ export default function EcommerceRenderer({ app, pathname, config, basePath = ""
     setCartItems((prev) => prev.filter((i) => i.product._id !== productId));
   }
 
-  // Find current page config
   const currentPageConfig = config.pages.find((p) =>
     pathname === "/" ? p.isHome : `/${p.slug}` === pathname
   ) || config.pages.find((p) => p.isHome);
@@ -271,7 +620,7 @@ export default function EcommerceRenderer({ app, pathname, config, basePath = ""
 
   return (
     <div>
-      {/* Header with cart badge */}
+      {/* Header */}
       <header
         className="sticky top-0 z-50"
         style={{ backgroundColor: config.theme.backgroundColor, borderBottom: `1px solid ${config.theme.primaryColor}22` }}
@@ -291,14 +640,34 @@ export default function EcommerceRenderer({ app, pathname, config, basePath = ""
             ))}
           </nav>
 
-          <Button
-            type="text"
-            onClick={() => setCartOpen(true)}
-          >
-            <Badge count={cartItems.reduce((s, i) => s + i.qty, 0)} showZero={false}>
-              <ShoppingCartOutlined className="text-xl" style={{ color: config.theme.textColor }} />
-            </Badge>
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Customer auth button */}
+            {customer ? (
+              <Dropdown
+                menu={{
+                  items: [
+                    { key: "name", label: <span className="text-xs text-slate-400">{customer.email}</span>, disabled: true },
+                    { type: "divider" },
+                    { key: "logout", label: "Logout", icon: <LogoutOutlined />, danger: true, onClick: handleLogout },
+                  ],
+                }}
+              >
+                <Button type="text" icon={<UserOutlined />} style={{ color: config.theme.textColor }}>
+                  <span className="hidden sm:inline">{customer.name.split(" ")[0]}</span>
+                </Button>
+              </Dropdown>
+            ) : (
+              <Button type="text" icon={<UserOutlined />} onClick={() => setAuthOpen(true)} style={{ color: config.theme.textColor }}>
+                <span className="hidden sm:inline">Login</span>
+              </Button>
+            )}
+
+            <Button type="text" onClick={() => setCartOpen(true)}>
+              <Badge count={cartItems.reduce((s, i) => s + i.qty, 0)} showZero={false}>
+                <ShoppingCartOutlined className="text-xl" style={{ color: config.theme.textColor }} />
+              </Badge>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -364,7 +733,7 @@ export default function EcommerceRenderer({ app, pathname, config, basePath = ""
                 ))}
                 <div className="text-right mt-4">
                   <Title level={4}>Total: {formatPrice(cartItems.reduce((s, i) => s + i.product.price * i.qty, 0), currencySymbol)}</Title>
-                  <Button type="primary" size="large">Proceed to Checkout</Button>
+                  <Button type="primary" size="large" onClick={() => setCheckoutOpen(true)}>Proceed to Checkout</Button>
                 </div>
               </div>
             )}
@@ -374,6 +743,14 @@ export default function EcommerceRenderer({ app, pathname, config, basePath = ""
 
       <AppFooter config={config} appName={app.name} basePath={basePath} />
 
+      <CustomerAuthDrawer
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        appId={app.id}
+        primaryColor={config.theme.primaryColor}
+        onAuth={handleAuth}
+      />
+
       <CartDrawer
         open={cartOpen}
         onClose={() => setCartOpen(false)}
@@ -381,7 +758,42 @@ export default function EcommerceRenderer({ app, pathname, config, basePath = ""
         onUpdateQty={updateQty}
         onRemove={removeFromCart}
         currencySymbol={currencySymbol}
+        onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }}
       />
+
+      <CheckoutDrawer
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        items={cartItems}
+        currencySymbol={currencySymbol}
+        appId={app.id}
+        appName={app.name}
+        razorpayEnabled={razorpayEnabled}
+        customer={customer}
+        onSuccess={(orderId, amount) => {
+          setCartItems([]);
+          setCheckoutOpen(false);
+          setOrderSuccess({ orderId, amount });
+        }}
+      />
+
+      {/* Order success overlay */}
+      {orderSuccess && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6" style={{ backgroundColor: config.theme.backgroundColor }}>
+          <div className="text-center max-w-sm w-full">
+            <CheckCircleOutlined className="text-7xl text-green-500 mb-4" />
+            <Title level={2} style={{ color: config.theme.textColor }}>Order Placed!</Title>
+            <p className="text-slate-500 mb-1">Your order has been confirmed.</p>
+            <p className="text-slate-400 text-sm mb-6">
+              Order ref: <span className="font-mono font-semibold">{orderSuccess.orderId.slice(-8).toUpperCase()}</span>
+              &nbsp;·&nbsp;{formatPrice(orderSuccess.amount, currencySymbol)}
+            </p>
+            <Button type="primary" size="large" onClick={() => setOrderSuccess(null)}>
+              Continue Shopping
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

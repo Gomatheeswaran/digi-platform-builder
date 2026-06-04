@@ -7,11 +7,14 @@ import { ObjectId } from "mongodb";
 export interface PlatformUser {
   _id: ObjectId;
   name: string;
-  email: string; // @gmail.com only
+  email: string;
   password: string;
   role: "super_admin" | "tenant_admin";
   isEmailVerified: boolean;
   plan: "free" | "starter" | "pro";
+  suspended?: boolean;       // true = account blocked by super admin
+  lastLoginAt?: Date;        // updated on every successful login
+  recoveryEmail?: string;    // where OTPs are sent for password reset
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,7 +23,7 @@ export interface OTPRecord {
   _id: ObjectId;
   email: string;
   otpHash: string;
-  type: "register" | "login";
+  type: "register" | "login" | "reset";
   attempts: number;
   expiresAt: Date;
   createdAt: Date;
